@@ -20,15 +20,10 @@ def index(request):
 def detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     return render(request, 'questions/detail.html', {'question': question})
-	
-#def add(request):
-#    return render(request, 'questions/add.html')
+
 
 def add(request):
-    print("what??")
     if request.method == "POST":
-        print("ispost?")
-        sys.stdout.flush()
         form = QuestionForm(request.POST)
         if form.is_valid():
             question = form.save(commit=False)
@@ -36,7 +31,18 @@ def add(request):
             question.save()
             return redirect('detail', question.pk)
     else:
-        print("what")
-        sys.stdout.flush()
         form = QuestionForm()
     return render(request, 'questions/add.html', {'form': form})
+	
+def edit(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    if request.method == "POST":
+        form = QuestionForm(request.POST, instance=question)
+        if form.is_valid():
+            question = form.save(commit=False)
+            question.pub_date = timezone.now()
+            question.save()
+            return redirect('detail', question.pk)
+    else:
+        form = QuestionForm(instance=question)
+    return render(request, 'questions/add.html', {'form': form})	
