@@ -1,0 +1,12 @@
+Last 5 questions:
+
+{% if latest_question_list %}
+    <ul>
+    {% for question in latest_question_list %}
+		<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a></li>    {% endfor %}
+    </ul>
+{% else %}
+    <p>No questions are available.</p>
+{% endif %}
+
+<a href="{% url 'add' %}">Add a question</a>
