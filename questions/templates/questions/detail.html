@@ -1,6 +1,12 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+
 <h1>{{ question.question_text }}</h1>
 <ul>
 	<li> {{ question.pub_date}} </li>
 </ul>
 
 <a href="{% url 'edit' question.id %}">Edit</a>
+
+{% endblock %}

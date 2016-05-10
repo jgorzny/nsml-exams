@@ -1,4 +1,8 @@
-Last 5 questions:
+{% extends 'home/base.html' %}
+
+{% block content %}
+
+<p>Last 5 questions</p>
 
 {% if latest_question_list %}
     <ul>
@@ -10,3 +14,4 @@ Last 5 questions:
 {% endif %}
 
 <a href="{% url 'add' %}">Add a question</a>
+{% endblock %}

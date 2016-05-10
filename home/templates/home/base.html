@@ -1,0 +1,18 @@
+<html>
+<body>
+{% if user.is_authenticated %}
+    <p>User: {{ user.username }}  <a href="{% url 'accounts:logout' %}">Logout</a> <a href="{% url 'accounts:password_change' %}">Change password</a> <a href="/">Home</a> </p>
+{% else %}
+    <p>Not yet logged in; log in below.</a></p>
+{% endif %}
+    <div class="content container">
+        <div class="row">
+            <div class="col-md-8">
+			<hr>
+            {% block content %}
+            {% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
