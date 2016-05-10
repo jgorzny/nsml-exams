@@ -1,0 +1,14 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+<head>
+    <title>My Home Page</title>           
+	<link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}css/style.css" media="screen" />
+ 
+</head>
+<body>
+<p>My Content</p>  
+<p><a href="{% url 'index' %}">View Questions</a> </p>
+<p><a href="{% url 'add' %}">Add Question</a> </p>
+
+</body>
+</html>

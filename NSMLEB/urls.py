@@ -19,4 +19,5 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^questions/', include('questions.urls')),
     url(r'^admin/', admin.site.urls),
+    url(r'^', include('home.urls')),
 ]
