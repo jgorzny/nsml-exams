@@ -49,3 +49,45 @@ def edit(request, question_id):
     else:
         form = QuestionForm(instance=question)
     return render(request, 'questions/add.html', {'form': form})	
+	
+	
+@login_required
+def cart(request):
+    if "exam_cart" in request.session:
+        print("There are questions in the list")
+        examList = request.session["exam_cart"]
+        cart_question_list = Question.objects.filter(id__in=examList)
+        context = {'cart_question_list': cart_question_list}
+    else:
+        print("The cart is empty")
+        context = {}
+    
+    
+    return render(request, 'questions/cart.html', context)
+    
+@login_required
+def store(request, question_id):
+    print("Store request clicked")
+    if "exam_cart" in request.session:
+        cart = request.session["exam_cart"]
+        cart.append(question_id)
+        request.session["exam_cart"] = cart
+    else:
+        cart = [question_id]
+        request.session["exam_cart"] = cart
+    return render(request, 'questions/qadded.html')
+    
+@login_required
+def removeFromCart(request, question_id):
+    if "exam_cart" in request.session:
+        cart = request.session["exam_cart"]
+        cart.remove(question_id)
+        request.session["exam_cart"] = cart
+        print("Question was removed - ",cart)
+    return render(request, 'questions/qremoved.html')
+    
+@login_required
+def emptyCart(request):
+    if "exam_cart" in request.session:
+        del request.session["exam_cart"]
+    return render(request, 'questions/cartempty.html')    

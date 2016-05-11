@@ -1,0 +1,16 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+
+<h1>Cart</h1>
+{% if cart_question_list %}
+    <ul>
+    {% for question in cart_question_list %}
+		<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a> <a href="{% url 'questions.cart.remove' question.id %}">Remove from cart</a></li>    {% endfor %}
+    </ul>
+    <a href="{% url 'questions.cart.empty' %}">Empty cart</a>
+{% else %}
+    <p>No questions are available.</p>
+{% endif %}
+
+{% endblock %}
