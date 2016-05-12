@@ -12,5 +12,5 @@ urlpatterns = [
     url(r'^cart/add/(?P<question_id>[0-9]+)/$', views.store, name='questions.cart.add'),
     url(r'^cart/remove/(?P<question_id>[0-9]+)/$', views.removeFromCart, name='questions.cart.remove'),    
     url(r'^cart/empty/$', views.emptyCart, name='questions.cart.empty'),        
-	url(r'^accounts/login/$', 'django.contrib.auth.views.login', {'template_name': 'admin/login.html'}),
+	url(r'^accounts/login/$', auth_views.login, {'template_name': 'admin/login.html'}),
 ]

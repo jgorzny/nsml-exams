@@ -1,20 +1,22 @@
 from django.conf.urls import patterns, url
-urlpatterns = patterns('',
+from django.contrib.auth import views
+
+urlpatterns = [
     url(
         r'^login/$',
-        'django.contrib.auth.views.login',
+        views.login,
         name='login',
         kwargs={'template_name': 'accounts/login.html'}
     ),
     url(
         r'^logout/$',
-        'django.contrib.auth.views.logout',
+        views.logout,
         name='logout',
         kwargs={'next_page': '/'}
     ),
     url(
         r'^password_change/$',
-        'django.contrib.auth.views.password_change',
+        views.password_change,
         name='password_change',
         kwargs={
                'template_name': 'accounts/password_change_form.html',
@@ -23,8 +25,8 @@ urlpatterns = patterns('',
     ),
     url(
         r'^password_change_done/$',
-        'django.contrib.auth.views.password_change_done',
+        views.password_change_done,
         name='password_change_done',
         kwargs={'template_name': 'accounts/password_change_done.html'}
     ),	
-)
+]
