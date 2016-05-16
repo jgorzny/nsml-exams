@@ -4,7 +4,26 @@
 
 <h1>{{ question.question_text }}</h1>
 <ul>
-	<li> {{ question.pub_date}} </li>
+	<li> Published on: {{ question.pub_date}} </li>
+    <li> Description: {{ question.question_description}} </li>
+    <li> Instructions: {{ question.question_instructions }}</li>
+    <li> Answer: {{ question.answer_text}}</li>
+
+    <li> Notes: {{ question.question_notes}}</li>
+
+    
+    <li> Figure 1: {{ question.figure_one}}</li>
+    <li> Figure 2: {{ question.figure_two}}</li>
+    <li> Figure 3: {{ question.figure_three}}</li>
+
+    <li> Latex Figure 1: {{ question.latex_figure_one}}</li>
+    <li> Latex Figure 2:{{ question.latex_figure_two}}</li>
+    <li> Latex Figure 3: {{ question.latex_figure_three}}</li> 
+
+    <li> Last edited on: {{ question.last_edited}}</li>
+    <li> Number of edits: {{ question.num_edits}}</li>
+    <li> Initial author: {{ question.initial_author}}</li>
+    <li> Editing authors: {{ question.contributing_authors}}</li>    
 </ul>
 
 <a href="{% url 'edit' question.id %}">Edit</a>
