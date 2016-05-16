@@ -1,6 +1,9 @@
 from django.http import HttpResponse
 from django.http import Http404
 import sys
+import zipfile
+import StringIO
+import os
 from django.contrib.auth.decorators import login_required
 
 
@@ -8,6 +11,9 @@ from django.shortcuts import get_object_or_404, render
 from django.shortcuts import redirect
 from django import forms
 from django.utils import timezone
+from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.conf import settings
+
 
 
 from .models import Question, QuestionForm
@@ -90,4 +96,58 @@ def removeFromCart(request, question_id):
 def emptyCart(request):
     if "exam_cart" in request.session:
         del request.session["exam_cart"]
-    return render(request, 'questions/cartempty.html')    
+    return render(request, 'questions/cartempty.html')  
+
+@login_required
+def generateOptions(request):
+    return render(request, 'questions/generate.html')   
+
+@login_required
+def makeExam(request):
+    #http://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
+    
+    #Make files for each question
+    cart = request.session["exam_cart"]
+    
+    # Files (local path) to put in the .zip
+    filenames = []
+    for qid in cart:
+    
+        #if the file does not already exist, make it
+        filename = settings.QUESTIONS_DIRS + "question" + qid + ".txt"
+        filenames.append(filename)
+        f = open(filename, 'w')
+        f.write("Testing\n")
+     
+        #TODO: if it does exist, check that it is up to date and use it. If it is not update, generate it again.
+        
+        
+    # Folder name in ZIP archive which contains the above files
+    # E.g [thearchive.zip]/somefiles/file2.txt
+    # TODO: Set this to something better
+    zip_subdir = "Exam"
+    zip_filename = "%s.zip" % zip_subdir
+
+    # Open StringIO to grab in-memory ZIP contents
+    s = StringIO.StringIO()
+
+    # The zip compressor
+    zf = zipfile.ZipFile(s, "w")
+
+    for fpath in filenames:
+        # Calculate path for file in zip
+        fdir, fname = os.path.split(fpath)
+        zip_path = os.path.join(zip_subdir, fname)
+
+        # Add file, at correct path
+        zf.write(fpath, zip_path)
+
+    # Must close zip for all contents to be written
+    zf.close()
+
+    # Grab ZIP file from in-memory, make response with correct MIME-type
+    resp = HttpResponse(s.getvalue(), content_type = "application/x-zip-compressed")
+    # ..and correct content-disposition
+    resp['Content-Disposition'] = 'attachment; filename=%s' % zip_filename
+
+    return resp

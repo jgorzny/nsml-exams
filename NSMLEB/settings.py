@@ -14,7 +14,11 @@ import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+CURRENT_PATH = os.path.abspath(os.path.dirname(__file__).decode('utf-8')).replace('\\', '/')
+STATICFILES_DIRS = (
+    os.path.join(CURRENT_PATH, 'static'),
+)
+QUESTIONS_DIRS = "D:\\Consulting\\NSMLExamBank\\NSMLEB\\questions\\static\\questions\\questionfiles\\"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
