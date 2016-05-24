@@ -1,0 +1,14 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+
+<h1>Results</h1>
+{% if taglist %}
+    <ul>
+    <li>{{ taglist }}</li>
+    </ul>
+{% else %}
+    <p>No questions are available.</p>
+{% endif %}
+
+{% endblock %}

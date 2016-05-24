@@ -65,12 +65,15 @@ def search(request):
 @login_required
 def searchresults(request):
     if 'tags' in request.GET:
-        message = 'You searched for: %r' % request.GET['tags']
-    else:
-        message = 'You submitted an empty form.'
+    #    message = 'You searched for: %r' % request.GET['tags']
+    #else:
+    #    message = 'You submitted an empty form.'
     #message = 'You submitted an empty form.'
-    return HttpResponse(message)
-    
+    #return HttpResponse(message)
+        searchedtags = request.GET['tags']
+        return render(request, 'questions/searchresults.html', {'taglist': searchedtags})
+    else:
+        return HttpResponse('Please submit a search term.')
     
 @login_required
 def cart(request):
