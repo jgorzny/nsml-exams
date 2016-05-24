@@ -8,6 +8,7 @@ urlpatterns = [
     url(r'^(?P<question_id>[0-9]+)/$', views.detail, name='detail'),
     url(r'^add/$', views.add, name='add'),
     url(r'^search/$', views.search, name='questions.search'),
+    url(r'^search_results/$', views.searchresults, name='questions.searchresults'),
     url(r'^cart/$', views.cart, name='questions.cart'),	
     url(r'^(?P<question_id>[0-9]+)/edit/$', views.edit, name='edit'),	
     url(r'^cart/add/(?P<question_id>[0-9]+)/$', views.store, name='questions.cart.add'),

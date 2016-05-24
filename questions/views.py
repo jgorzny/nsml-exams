@@ -61,6 +61,16 @@ def search(request):
     #TODO: make this search
     form = QuestionSearch()
     return render(request, 'questions/search.html', {'form': form})
+
+@login_required
+def searchresults(request):
+    if 'tags' in request.GET:
+        message = 'You searched for: %r' % request.GET['tags']
+    else:
+        message = 'You submitted an empty form.'
+    #message = 'You submitted an empty form.'
+    return HttpResponse(message)
+    
     
 @login_required
 def cart(request):
