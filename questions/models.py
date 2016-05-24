@@ -7,6 +7,8 @@ from tagging.forms import TagField
 
 from tagging_autocomplete.models import TagAutocompleteField
 from tagging_autocomplete.widgets import TagAutocomplete
+from tagging.models import Tag
+
 
 # Create your models here.
 class Question(models.Model):
@@ -28,9 +30,16 @@ class Question(models.Model):
     latex_figure_three = models.TextField(max_length=200,default='e.g. a table')
     tags = TagAutocompleteField()
     
+    def get_tags(self):
+        return Tag.objects.get_for_object(self) 
+    
 class QuestionForm(ModelForm):
     class Meta:
         model = Question
         fields = ['question_text','question_description','question_instructions','question_notes','answer_text',
         'figure_one','figure_two','figure_three','latex_figure_one','latex_figure_two', 'latex_figure_three', 'tags']
-        #tags = TagField(widget=TagAutocomplete())
+
+class QuestionSearch(ModelForm):
+    class Meta:
+        model = Question
+        fields=['tags']

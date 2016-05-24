@@ -16,7 +16,7 @@ from django.conf import settings
 
 
 
-from .models import Question, QuestionForm
+from .models import Question, QuestionForm, QuestionSearch
 
 @login_required
 def index(request):
@@ -55,8 +55,13 @@ def edit(request, question_id):
     else:
         form = QuestionForm(instance=question)
     return render(request, 'questions/add.html', {'form': form})	
-	
-	
+
+@login_required	
+def search(request):
+    #TODO: make this search
+    form = QuestionSearch()
+    return render(request, 'questions/search.html', {'form': form})
+    
 @login_required
 def cart(request):
     if "exam_cart" in request.session:

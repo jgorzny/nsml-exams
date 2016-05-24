@@ -7,8 +7,12 @@
 <p><a href="{% url 'index' %}">View Questions</a> </p>
 <p><a href="{% url 'add' %}">Add Question</a> </p>
 <br>
+<div>
+<p><a href="{% url 'questions.search' %}">Search</a></p>
+</div>
+<div>
 <p><a href="{% url 'admin:index' %}">Admin</a> </p>
-
+</div>
 <br>
 
 {% endblock %}
