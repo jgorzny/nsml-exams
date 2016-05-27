@@ -8,6 +8,7 @@ from tagging.forms import TagField
 from tagging_autocomplete.models import TagAutocompleteField
 from tagging_autocomplete.widgets import TagAutocomplete
 from tagging.models import Tag
+from tagging.registry import register
 
 
 # Create your models here.

@@ -4,11 +4,58 @@
 
 <h1>Results</h1>
 {% if taglist %}
+You entered the following query:
     <ul>
-    <li>{{ taglist }}</li>
+    <li>Tags: {{ taglist }}</li>
     </ul>
 {% else %}
-    <p>No questions are available.</p>
+    <p>No tags searched</p>
 {% endif %}
+
+Which returned the following questions:<br>
+<script type='text/javascript' src='http://code.jquery.com/jquery-1.8.2.js'></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("#newbutton").click(function() {
+                    var input_string = $("#newbutton").val();
+                    $.ajax({
+                        url : "../searchresults_json/", 
+                        type : "POST",
+                        dataType: "json", 
+                        data : {
+                            client_response : input_string,
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                            },
+                        success : function(json) {
+                            $('#result').empty().append( 'Question added');
+                        },
+                        error : function(xhr,errmsg,err) {
+                            alert(xhr.status + ": " + xhr.responseText);
+                        }
+                    });
+                    return false;
+            });
+        });
+</script>
+
+{% if questions %}
+    <ul>
+    {% for question in questions %}
+		<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a> 
+        <form method="post" name="example form" >
+{% csrf_token %}
+        <button id="newbutton" type="submit" form="form1" value="{{ question.id }}">Add to Exam</button>
+</form>
+<div id="result">
+</div>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No questions were found.</p>
+{% endif %}
+
+<br>
+
+
 
 {% endblock %}

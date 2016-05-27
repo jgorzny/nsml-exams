@@ -9,11 +9,17 @@ from django.contrib.auth.decorators import login_required
 
 from django.shortcuts import get_object_or_404, render
 from django.shortcuts import redirect
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+
 from django import forms
 from django.utils import timezone
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.conf import settings
+from tagging.models import Tag, TaggedItem
 
+import json
+import socket
 
 
 from .models import Question, QuestionForm, QuestionSearch
@@ -58,23 +64,39 @@ def edit(request, question_id):
 
 @login_required	
 def search(request):
-    #TODO: make this search
     form = QuestionSearch()
     return render(request, 'questions/search.html', {'form': form})
 
 @login_required
 def searchresults(request):
     if 'tags' in request.GET:
-    #    message = 'You searched for: %r' % request.GET['tags']
-    #else:
-    #    message = 'You submitted an empty form.'
-    #message = 'You submitted an empty form.'
-    #return HttpResponse(message)
         searchedtags = request.GET['tags']
-        return render(request, 'questions/searchresults.html', {'taglist': searchedtags})
+        foundquestions = TaggedItem.objects.get_by_model(Question, searchedtags)
+        return render(request, 'questions/searchresults.html', {'taglist': searchedtags, 'questions':foundquestions})
     else:
         return HttpResponse('Please submit a search term.')
     
+def ajax(request):
+    print "in ajax"
+    if request.POST.has_key('client_response'):
+        x = request.POST['client_response']                  
+        y = x                        
+        response_dict = {}                                          
+        response_dict.update({'server_response': y })
+        print "key found", x
+        if "exam_cart" in request.session:
+            cart = request.session["exam_cart"]
+            cart.append(x)
+            request.session["exam_cart"] = cart
+        else:
+            cart = [x]
+            request.session["exam_cart"] = cart
+        return HttpResponse(json.dumps(response_dict), content_type='application/javascript') 
+    else:
+        #TODO: this.
+        return render_to_response('questions/searchresults.html', context_instance=RequestContext(request))
+   
+
 @login_required
 def cart(request):
     if "exam_cart" in request.session:
