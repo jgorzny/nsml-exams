@@ -6,7 +6,7 @@
 </head>
 <body>
 {% if user.is_authenticated %}
-    <p>User: {{ user.username }}  <a href="{% url 'accounts:logout' %}">Logout</a> <a href="{% url 'accounts:password_change' %}">Change password</a> <a href="/">Home</a> <a href="{% url 'questions.cart' %}">Exam Cart</a> </p>
+    <p>User: {{ user.username }}  <a href="{% url 'accounts:logout' %}">Logout</a> <a href="{% url 'accounts:password_change' %}">Change password</a> <a href="/">Home</a> <a href="{% url 'questions.cart' %}">Exam Cart</a> <a href="{% url 'questions.search' %}">Search</a></p>
 {% else %}
     <p>Not yet logged in; log in below.</a></p>
 {% endif %}

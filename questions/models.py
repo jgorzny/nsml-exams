@@ -9,6 +9,8 @@ from tagging_autocomplete.models import TagAutocompleteField
 from tagging_autocomplete.widgets import TagAutocomplete
 from tagging.models import Tag
 from tagging.registry import register
+from django import forms
+
 
 
 # Create your models here.
@@ -41,6 +43,9 @@ class QuestionForm(ModelForm):
         'figure_one','figure_two','figure_three','latex_figure_one','latex_figure_two', 'latex_figure_three', 'tags']
 
 class QuestionSearch(ModelForm):
+    filterResults = forms.BooleanField(required=False, label="Include questions already in your exam", initial=False)
+
     class Meta:
         model = Question
         fields=['tags']
+        

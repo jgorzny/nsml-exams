@@ -81,8 +81,12 @@ def searchresults(request):
             cart_question_list = Question.objects.filter(id__in=examList)
             context.update({'cart_question_list': cart_question_list})
             
-            foundquestionsFiltered = foundquestions.exclude(id__in=examList)
-            context['questions']=foundquestionsFiltered
+            #filterResultsFlag = request.GET['filterResults']
+            #print filterResultsFlag, "is the flag"
+            #if filterResultsFlag == "off":
+            if 'filterResults' not in request.GET:
+                foundquestionsFiltered = foundquestions.exclude(id__in=examList)
+                context['questions']=foundquestionsFiltered
             
             print cart_question_list
         else:
