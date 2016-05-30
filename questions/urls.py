@@ -17,5 +17,5 @@ urlpatterns = [
     url(r'^accounts/login/$', auth_views.login, {'template_name': 'admin/login.html'}),
     url(r'^cart/generate/$', views.generateOptions, name='questions.cart.generate'),
     url(r'^cart/generate/make/$', views.makeExam, name='questions.cart.make'),
-    url(r'^searchresults_json/$', views.ajax, name='questions.search.json'),
+    url(r'^searchresults_json/$', views.ajax, name='questions.search.json'),    
 ]

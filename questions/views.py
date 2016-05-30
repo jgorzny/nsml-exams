@@ -72,25 +72,55 @@ def searchresults(request):
     if 'tags' in request.GET:
         searchedtags = request.GET['tags']
         foundquestions = TaggedItem.objects.get_by_model(Question, searchedtags)
-        return render(request, 'questions/searchresults.html', {'taglist': searchedtags, 'questions':foundquestions})
+        
+        context = {'taglist': searchedtags, 'questions':foundquestions}
+        
+        if "exam_cart" in request.session:
+            print("There are questions in the list - search")
+            examList = request.session["exam_cart"]
+            cart_question_list = Question.objects.filter(id__in=examList)
+            context.update({'cart_question_list': cart_question_list})
+            
+            foundquestionsFiltered = foundquestions.exclude(id__in=examList)
+            context['questions']=foundquestionsFiltered
+            
+            print cart_question_list
+        else:
+            print("The cart is empty")
+        
+        return render(request, 'questions/searchresults.html', context)
     else:
         return HttpResponse('Please submit a search term.')
     
 def ajax(request):
-    print "in ajax"
+    
     if request.POST.has_key('client_response'):
         x = request.POST['client_response']                  
         y = x                        
         response_dict = {}                                          
         response_dict.update({'server_response': y })
-        print "key found", x
-        if "exam_cart" in request.session:
-            cart = request.session["exam_cart"]
-            cart.append(x)
-            request.session["exam_cart"] = cart
+        
+        toDeleteString = request.POST['delete_question']
+        toDelete = toDeleteString == "true"
+        print toDelete, toDeleteString
+        
+        if toDelete:
+            print "Deleting question.."
+            if "exam_cart" in request.session:
+                cart = request.session["exam_cart"]
+                cart.remove(x)
+                request.session["exam_cart"] = cart
+                #TODO remove session variable if cart is empty
         else:
-            cart = [x]
-            request.session["exam_cart"] = cart
+            print "Adding question..."
+            if "exam_cart" in request.session:
+                cart = request.session["exam_cart"]
+                cart.append(x)
+                request.session["exam_cart"] = cart
+            else:
+                cart = [x]
+                request.session["exam_cart"] = cart
+            print request.session["exam_cart"]
         return HttpResponse(json.dumps(response_dict), content_type='application/javascript') 
     else:
         #TODO: this.

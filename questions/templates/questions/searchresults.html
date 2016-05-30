@@ -13,40 +13,58 @@ You entered the following query:
 {% endif %}
 
 Which returned the following questions:<br>
+{% if questions %}
+
 <script type='text/javascript' src='http://code.jquery.com/jquery-1.8.2.js'></script>
     <script type="text/javascript">
-        $(document).ready(function() {
-            $("#newbutton").click(function() {
-                    var input_string = $("#newbutton").val();
+    function addToExam(event) {
+                    var input_string = $(event.data.buttonName).val();
+                    var deleteQuestion  = false;
+                    var buttonText = $(event.data.buttonName).html();
+                    if (buttonText.indexOf("Remove") >= 0) {
+                        deleteQuestion = true;
+                    }
+                    
                     $.ajax({
                         url : "../searchresults_json/", 
                         type : "POST",
                         dataType: "json", 
                         data : {
                             client_response : input_string,
+                            delete_question : deleteQuestion,
                             csrfmiddlewaretoken: '{{ csrf_token }}'
                             },
                         success : function(json) {
-                            $('#result').empty().append( 'Question added');
+                            if (deleteQuestion) {
+                                $(event.data.resultName).empty().append( 'Question removed');                             
+                                $(event.data.buttonName).html('Add to exam')
+                            } else {
+                                $(event.data.resultName).empty().append( 'Question added');                             
+                                $(event.data.buttonName).html('Remove from exam')
+                            }
                         },
                         error : function(xhr,errmsg,err) {
                             alert(xhr.status + ": " + xhr.responseText);
                         }
                     });
                     return false;
-            });
+            }
+        $(document).ready(function() {
+            {% for question in questions %}
+            $("#questionbutton{{ question.id }}").click({buttonName: "#questionbutton{{ question.id }}", resultName: "#result{{ question.id }}"},addToExam);
+            {% endfor %}
         });
 </script>
 
-{% if questions %}
     <ul>
     {% for question in questions %}
 		<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a> 
         <form method="post" name="example form" >
 {% csrf_token %}
-        <button id="newbutton" type="submit" form="form1" value="{{ question.id }}">Add to Exam</button>
+        <button id="questionbutton{{ question.id }}" type="submit" form="form1" value="{{ question.id }}">{% if question in cart_question_list %}Remove from exam{% else %}Add to exam{% endif %}</button>
+
 </form>
-<div id="result">
+        <div id="result{{ question.id }}">
 </div>
     {% endfor %}
     </ul>
