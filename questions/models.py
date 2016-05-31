@@ -11,6 +11,8 @@ from tagging.models import Tag
 from tagging.registry import register
 from django import forms
 
+import os
+
 
 
 # Create your models here.
@@ -42,18 +44,35 @@ class Question(models.Model):
         
     def get_figures(self):
         return Images.objects.filter(question=self.pk)
+
+    def get_tables(self):
+        return Tables.objects.filter(question=self.pk)        
     
     def get_num_tables(self):
         tableSet = Tables.objects.filter(question=self.pk)
         return tableSet.count()
         
+    def get_new_table_num(self):
+        tableSet = Tables.objects.filter(question=self.pk)
+        return tableSet.count() + 1
+    
+    def get_new_figure_num(self):
+        figureSet = Images.objects.filter(question=self.pk)
+        return figureSet.count() + 1
+        
 class Images(models.Model):
     question = models.ForeignKey(Question, default=None)
     image =  models.FileField(default='',blank=True, null=True) 
+    num = models.PositiveIntegerField(default=0)
+    
+    def get_fig_name(self):
+        print "figure name is:", self.image.name
+        return os.path.basename(self.image.name)
 
 class Tables(models.Model):
     question = models.ForeignKey(Question, default=None)
     table = models.TextField(max_length=200,default='Table source') 
+    num = models.PositiveIntegerField(default=0)
     
 class QuestionForm(ModelForm):
     class Meta:

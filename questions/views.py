@@ -16,6 +16,8 @@ from django import forms
 from django.utils import timezone
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.conf import settings
+from wsgiref.util import FileWrapper
+
 from tagging.models import Tag, TaggedItem
 
 import json
@@ -77,7 +79,7 @@ def add(request):
                     newFileName = makeNewFileName(str(fileName), questionid, figNum)
                     handle_uploaded_file(request.FILES[figKey], newFileName)
                     
-                    i = Images(question=question, image=newFileName)
+                    i = Images(question=question, image=newFileName, num=figNum)
                     i.save()
                     
                 else:
@@ -94,7 +96,7 @@ def add(request):
                     tableSource = request.POST[tabKey]
                     print "there was an additional table, with the expected key: ", tableSource
 
-                    t = Tables(question=question, table=tableSource)
+                    t = Tables(question=question, table=tableSource, num=tabNum)
                     t.save()
                   
                     
@@ -114,11 +116,19 @@ def edit(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     if request.method == "POST":
         form = QuestionForm(request.POST, instance=question)
+        
+        print "postValues:", request.POST.values()
+        print "postKeys:", request.POST.keys()
+        print "values", request.FILES.values()
+        print "keys",request.FILES.keys()
+            
         if form.is_valid():
             question = form.save(commit=False)
             question.pub_date = timezone.now()
             question.save()
 
+            #TODO: copy logic for saving images/tables from add
+            
             return redirect('detail', question.pk)
     else:
         form = QuestionForm(instance=question)
@@ -211,6 +221,26 @@ def cart(request):
     
     
     return render(request, 'questions/cart.html', context)
+   
+
+@login_required
+def downloadFigure(request, figure_num, question_id):
+    print "want to download figure", figure_num, "for question", question_id
+    q = Question.objects.get(id=question_id)
+    fig = Images.objects.get(question=q,num=figure_num)
+    filename = fig.image.name
+    
+    print "which has filepath", filename
+    wrapper = FileWrapper(file(filename))
+
+    resp = HttpResponse(wrapper, content_type = 'application/force-download')
+    # ..and correct content-disposition
+    resp['Content-Disposition'] = 'attachment; filename=%s' % fig.get_fig_name()
+    resp['Content-Length'] = os.path.getsize(filename)
+
+
+    return resp
+    
     
 @login_required
 def store(request, question_id):

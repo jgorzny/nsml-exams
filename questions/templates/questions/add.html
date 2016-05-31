@@ -17,6 +17,19 @@ function clearTable(event) {
     $(event.data.fileFieldName).val("Table source");
 }
 
+function clearOld(event) {
+    var buttonText = $(event.data.fileFieldButtonName).html();
+    if(buttonText.indexOf("Restore") >= 0) {
+    $(event.data.fileFieldName).val(event.data.oldVal);
+        $(event.data.fileFieldButtonName).html("Delete old file")
+
+    } else {
+    
+    $(event.data.fileFieldName).val("Deleted");
+    $(event.data.fileFieldButtonName).html("Restore original")
+    }
+}
+
     function addFile() {
                             var currentCount = $('#numNewFiles').html()*1;
                             $('#numNewFiles').html(function(i, val) { return val*1+1 });
@@ -39,21 +52,45 @@ function clearTable(event) {
         $(document).ready(function() {
             $("#addNewFile").click({buttonName: "#addNewFile"},addFile);
             $("#addNewTable").click({buttonName: "#addNewTable"},addTable);
-            
+{% for tab in form.instance.get_tables %}
+$("#resetInputForTable{{ tab.num }}").click({fileFieldName: "#id_ltable_{{tab.num}}"}, clearTable);
+{% endfor %}   
+{% for fig in form.instance.get_figures %}
+$("#deleteOldFile{{ fig.num }}").click({fileFieldName: "#span_{{fig.num}}", fileFieldButtonName: "#deleteOldFile{{ fig.num }}", oldVal: "{{fig.get_fig_name}}"}, clearOld);
+{% endfor %}
         });
 </script>
-{% csrf_token %}
-<div id="numNewFiles"  style="display: none;">1</div>
-        <button id="addNewFile" type="submit" form="form1" value="addFileButton">Add an image file</button>
 
+
+<div id="numNewFiles"  style="display: none;">{% if form.instance %}
+{{ form.instance.get_new_figure_num }}{% else %} 1
+{% endif %}</div>
+
+{% if form.instance %}
+{% for fig in form.instance.get_figures %}
+<p><label for="id_figure_{{fig.num}}">Figure {{fig.num}}:</label> <input id="span_{{fig.num}}" value="{{fig.get_fig_name}}" disabled>   <button id="deleteOldFile{{fig.num}}" type="button" >Delete old file.</button><a href="fig/{{fig.num}}/">Download old figure</a>
+<br> Choose new file: <input id="id_figure_{{fig.num}}" name="figure_{{fig.num}}" type="file" value=""/>  <button id="resetInputForFile{{fig.num}}" type="button" >Remove new upload</button></p>
+{% endfor %}
+{% endif %}
                 <div id="addFiles">
 </div>
+        <button id="addNewFile" type="submit" form="form1" value="addFileButton">Add an image file</button>
 
-<div id="numNewTables"  style="display: none;">1</div>
-        <button id="addNewTable" type="submit" form="form1" value="addTableButton">Add a table</button>
 
+
+<div id="numNewTables"  style="display: none;">{% if form.instance %}
+{{ form.instance.get_new_table_num }}{% else %} 1
+{% endif %}</div>
+{% if form.instance %}
+{% for tab in form.instance.get_tables %}
+<p><label for="id_ltable_{{tab.num}}">Table {{tab.num}}:</label> <textarea cols="40" maxlength="200" rows="10" id="id_ltable_{{tab.num}}" name="ltable_{{tab.num}}" type="text" value="Table source">{{tab.table}}</textarea><button id="resetInputForTable{{tab.num}}" type="button" >Clear</button></p>                            
+{% endfor %}
+{% endif %}
                 <div id="addTables">
 </div>
+        <button id="addNewTable" type="submit" form="form1" value="addTableButton">Add a table</button>
+
+<br>
         <button type="submit" class="save btn btn-default">Save</button>
     </form>
 {% endblock %}

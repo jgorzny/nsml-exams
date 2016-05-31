@@ -16,6 +16,7 @@ urlpatterns = [
     url(r'^cart/empty/$', views.emptyCart, name='questions.cart.empty'),        
     url(r'^accounts/login/$', auth_views.login, {'template_name': 'admin/login.html'}),
     url(r'^cart/generate/$', views.generateOptions, name='questions.cart.generate'),
+    url(r'^(?P<question_id>[0-9]+)/edit/fig/(?P<figure_num>[0-9]+)/$', views.downloadFigure, name='questions.edit.downloadFigure'),
     url(r'^cart/generate/make/$', views.makeExam, name='questions.cart.make'),
     url(r'^searchresults_json/$', views.ajax, name='questions.search.json'),    
 ]
