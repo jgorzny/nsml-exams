@@ -17,6 +17,11 @@ function clearTable(event) {
     $(event.data.fileFieldName).val("Table source");
 }
 
+function clearSource(event) {
+    $(event.data.fileFieldName).val("Figure source");
+}
+
+
 function clearOld(event) {
     var buttonText = $(event.data.fileFieldButtonName).html();
     if(buttonText.indexOf("Restore") >= 0) {
@@ -34,9 +39,9 @@ function clearOld(event) {
                             var currentCount = $('#numNewFiles').html()*1;
                             $('#numNewFiles').html(function(i, val) { return val*1+1 });
 
-                            $('#addFiles').append( '<p><label for="id_figure_' + currentCount + '">Figure ' +  currentCount +':</label> <input id="id_figure_' + currentCount + '" name="figure_' + currentCount + '" type="file" value=""/>  <button id="resetInputForFile'+ currentCount +'" type="button" >Remove file</button></p>');                             
+                            $('#addFiles').append( '<p><label for="id_figure_' + currentCount + '">Figure ' +  currentCount +':</label> <input id="id_figure_' + currentCount + '" name="figure_' + currentCount + '" type="file" value=""/>  <button id="resetInputForFile'+ currentCount +'" type="button" >Remove file</button></p> <p><label for="id_figuresource_' + currentCount + '">Figure ' +  currentCount +' source:</label> <textarea cols="40" maxlength="200" rows="10" id="id_figuresource_' + currentCount + '" name="figuresource_' + currentCount + '" type="text" value="Figure source">Figure source</textarea><button id="resetInputForFigureSource'+ currentCount +'" type="button" >Clear</button></p>');                             
                             $("#resetInputForFile"+ currentCount).click({fileFieldName: "#id_figure_" + currentCount}, clearFile);
-
+                            $("#resetInputForFigureSource"+ currentCount).click({fileFieldName: "#id_figuresource_" + currentCount}, clearSource);
                     return false;
             }
             
@@ -57,6 +62,8 @@ $("#resetInputForTable{{ tab.num }}").click({fileFieldName: "#id_ltable_{{tab.nu
 {% endfor %}   
 {% for fig in form.instance.get_figures %}
 $("#deleteOldFile{{ fig.num }}").click({fileFieldName: "#span_{{fig.num}}", fileFieldButtonName: "#deleteOldFile{{ fig.num }}", oldVal: "{{fig.get_fig_name}}"}, clearOld);
+$("#resetInputForFigureSource{{ fig.num }}").click({fileFieldName: "#id_figuresource_{{fig.num}}"}, clearSource);
+
 {% endfor %}
         });
 </script>
@@ -68,8 +75,9 @@ $("#deleteOldFile{{ fig.num }}").click({fileFieldName: "#span_{{fig.num}}", file
 
 {% if form.instance %}
 {% for fig in form.instance.get_figures %}
-<p><label for="id_figure_{{fig.num}}">Figure {{fig.num}}:</label> <input id="span_{{fig.num}}" value="{{fig.get_fig_name}}" disabled>   <button id="deleteOldFile{{fig.num}}" type="button" >Delete old file.</button><a href="fig/{{fig.num}}/">Download old figure</a>
+<p><label for="id_figure_{{fig.num}}">Figure {{fig.num}}:</label> <input id="span_{{fig.num}}" value="{{fig.get_fig_name}}" disabled>   <button id="deleteOldFile{{fig.num}}" type="button">Delete old file.</button><a href="fig/{{fig.num}}/">Download old figure</a>
 <br> Choose new file: <input id="id_figure_{{fig.num}}" name="figure_{{fig.num}}" type="file" value=""/>  <button id="resetInputForFile{{fig.num}}" type="button" >Remove new upload</button></p>
+<p><label for="id_figuresource_{{fig.num}}">Figure {{fig.num}} source:</label> <textarea cols="40" maxlength="200" rows="10" id="id_figuresource_{{fig.num}}" name="figuresource_{{fig.num}}" type="text" value="{{fig.figure_source}}">{{fig.figure_source}}</textarea><button id="resetInputForFigureSource{{fig.num}}" type="button" >Clear</button></p>
 {% endfor %}
 {% endif %}
                 <div id="addFiles">

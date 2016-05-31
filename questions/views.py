@@ -70,6 +70,7 @@ def add(request):
             lookForFigures = True
             while lookForFigures:
                 figKey = 'figure_' + str(figNum)
+                figSKey = 'figuresource_' + str(figNum)
                 if figKey in request.FILES:
                     fileName = request.FILES[figKey]
                     print "there was an additional figure, with the expected key: ", fileName
@@ -79,9 +80,15 @@ def add(request):
                     newFileName = makeNewFileName(str(fileName), questionid, figNum)
                     handle_uploaded_file(request.FILES[figKey], newFileName)
                     
-                    i = Images(question=question, image=newFileName, num=figNum)
-                    i.save()
+                    fSource = request.POST[figSKey]
                     
+                    i = Images(question=question, image=newFileName, num=figNum, figure_source=fSource)
+                    i.save()
+                elif figSKey in request.POST:
+                    fSource = request.POST[figSKey]
+                    
+                    i = Images(question=question, image='', num=figNum, figure_source=fSource)
+                    i.save()
                 else:
                     lookForFigures = False
                 figNum = figNum + 1
