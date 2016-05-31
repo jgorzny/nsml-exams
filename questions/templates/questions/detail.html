@@ -23,7 +23,10 @@
     <li> Last edited on: {{ question.last_edited}}</li>
     <li> Number of edits: {{ question.num_edits}}</li>
     <li> Initial author: {{ question.initial_author}}</li>
-    <li> Editing authors: {{ question.contributing_authors}}</li>    
+    <li> Editing authors: {{ question.contributing_authors}}</li>  
+
+    <li> Last used on: {{ question.last_used}} </li>
+    <li> Number of times used: {{ question.num_used}} </li>
 </ul>
 
 <a href="{% url 'edit' question.id %}">Edit</a>

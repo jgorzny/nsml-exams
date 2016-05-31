@@ -42,6 +42,16 @@ def add(request):
         if form.is_valid():
             question = form.save(commit=False)
             question.pub_date = timezone.now()
+            
+            #print request.POST.keys()
+            
+            #note - no id_ for somereason
+            if 'figure_1' in request.POST:
+                #TODO: save the new figure.
+                print "there was an additional figure, with the expected key."
+            
+            #TODO save new table sources
+            
             question.save()
             return redirect('detail', question.pk)
     else:
@@ -57,6 +67,7 @@ def edit(request, question_id):
             question = form.save(commit=False)
             question.pub_date = timezone.now()
             question.save()
+
             return redirect('detail', question.pk)
     else:
         form = QuestionForm(instance=question)
@@ -95,7 +106,8 @@ def searchresults(request):
         return render(request, 'questions/searchresults.html', context)
     else:
         return HttpResponse('Please submit a search term.')
-    
+
+@login_required
 def ajax(request):
     
     if request.POST.has_key('client_response'):
@@ -125,6 +137,10 @@ def ajax(request):
                 cart = [x]
                 request.session["exam_cart"] = cart
             print request.session["exam_cart"]
+        return HttpResponse(json.dumps(response_dict), content_type='application/javascript') 
+    elif request.POST.has_key('add_files'):
+        print "getting to add file ajax"
+        response_dict = {}                                          
         return HttpResponse(json.dumps(response_dict), content_type='application/javascript') 
     else:
         #TODO: this.

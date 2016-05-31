@@ -32,9 +32,17 @@ class Question(models.Model):
     latex_figure_two = models.TextField(max_length=200,default='e.g. a table')
     latex_figure_three = models.TextField(max_length=200,default='e.g. a table')
     tags = TagAutocompleteField()
+    last_used = models.DateTimeField('date last used',default=datetime.now)
+    num_used = models.PositiveIntegerField(default=0)
+
+
     
     def get_tags(self):
         return Tag.objects.get_for_object(self) 
+        
+class Images(models.Model):
+    question = models.ForeignKey(Question, default=None)
+    image =  models.FileField(default='',blank=True, null=True)       
     
 class QuestionForm(ModelForm):
     class Meta:

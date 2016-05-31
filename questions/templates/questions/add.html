@@ -5,6 +5,55 @@
     <h1>Question</h1>
     <form method="POST" class="post-form">{% csrf_token %}
         {{ form.as_p }}
+        
+        <script type='text/javascript' src='http://code.jquery.com/jquery-1.8.2.js'></script>
+    <script type="text/javascript">
+
+function clearFile(event) {
+    $(event.data.fileFieldName).val("");
+}
+
+function clearTable(event) {
+    $(event.data.fileFieldName).val("Table source");
+}
+
+    function addFile() {
+                            var currentCount = $('#numNewFiles').html()*1;
+                            $('#numNewFiles').html(function(i, val) { return val*1+1 });
+
+                            $('#addFiles').append( '<p><label for="id_figure_' + currentCount + '">Figure ' +  currentCount +':</label> <input id="id_figure_' + currentCount + '" name="figure_' + currentCount + '" type="file" value=""/>  <button id="resetInputForFile'+ currentCount +'" type="button" >Remove file</button></p>');                             
+                            $("#resetInputForFile"+ currentCount).click({fileFieldName: "#id_figure_" + currentCount}, clearFile);
+
+                    return false;
+            }
+            
+    function addTable() {
+                            var currentCount = $('#numNewTables').html()*1;
+                            $('#numNewTables').html(function(i, val) { return val*1+1 });
+
+                            $('#addTables').append( '<p><label for="id_ltable_' + currentCount + '">Table ' +  currentCount +':</label> <textarea cols="40" maxlength="200" rows="10" id="id_ltable_' + currentCount + '" name="ltable_' + currentCount + '" type="text" value="Table source">Table source</textarea><button id="resetInputForTable'+ currentCount +'" type="button" >Clear</button></p>');                             
+                            $("#resetInputForTable"+ currentCount).click({fileFieldName: "#id_ltable_" + currentCount}, clearTable);
+
+                    return false;
+            }            
+        $(document).ready(function() {
+            $("#addNewFile").click({buttonName: "#addNewFile"},addFile);
+            $("#addNewTable").click({buttonName: "#addNewTable"},addTable);
+            
+        });
+</script>
+{% csrf_token %}
+<div id="numNewFiles"  style="display: none;">1</div>
+        <button id="addNewFile" type="submit" form="form1" value="addFileButton">Add an image file</button>
+
+                <div id="addFiles">
+</div>
+
+<div id="numNewTables"  style="display: none;">1</div>
+        <button id="addNewTable" type="submit" form="form1" value="addTableButton">Add a table</button>
+
+                <div id="addTables">
+</div>
         <button type="submit" class="save btn btn-default">Save</button>
     </form>
 {% endblock %}
