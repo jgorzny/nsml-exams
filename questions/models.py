@@ -40,9 +40,20 @@ class Question(models.Model):
     def get_tags(self):
         return Tag.objects.get_for_object(self) 
         
+    def get_figures(self):
+        return Images.objects.filter(question=self.pk)
+    
+    def get_num_tables(self):
+        tableSet = Tables.objects.filter(question=self.pk)
+        return tableSet.count()
+        
 class Images(models.Model):
     question = models.ForeignKey(Question, default=None)
-    image =  models.FileField(default='',blank=True, null=True)       
+    image =  models.FileField(default='',blank=True, null=True) 
+
+class Tables(models.Model):
+    question = models.ForeignKey(Question, default=None)
+    table = models.TextField(max_length=200,default='Table source') 
     
 class QuestionForm(ModelForm):
     class Meta:

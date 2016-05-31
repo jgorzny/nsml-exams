@@ -22,7 +22,7 @@ import json
 import socket
 
 
-from .models import Question, QuestionForm, QuestionSearch
+from .models import Question, QuestionForm, QuestionSearch, Images, Tables
 
 @login_required
 def index(request):
@@ -34,26 +34,77 @@ def index(request):
 def detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     return render(request, 'questions/detail.html', {'question': question})
+    
+def makeNewFileName(uploadedName, qid, fnum):
+    return settings.QUESTIONS_DIRS + "question-" + str(qid) + "-" + str(fnum) + uploadedName[-4:]
 
+    
+def handle_uploaded_file(f, fname):
+    with open(fname, 'w') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+        destination.close()
+        
 @login_required
 def add(request):
     if request.method == "POST":
-        form = QuestionForm(request.POST)
+        form = QuestionForm(request.POST, request.FILES)
         if form.is_valid():
+            print "postValues:", request.POST.values()
+            print "postKeys:", request.POST.keys()
+            print "values", request.FILES.values()
+            print "keys",request.FILES.keys()
+            
             question = form.save(commit=False)
             question.pub_date = timezone.now()
+            question.save()
+
+            questionid = question.pk
             
             #print request.POST.keys()
             
             #note - no id_ for somereason
-            if 'figure_1' in request.POST:
-                #TODO: save the new figure.
-                print "there was an additional figure, with the expected key."
+            figNum = 1
+            lookForFigures = True
+            while lookForFigures:
+                figKey = 'figure_' + str(figNum)
+                if figKey in request.FILES:
+                    fileName = request.FILES[figKey]
+                    print "there was an additional figure, with the expected key: ", fileName
+                    print request.FILES.keys()
+                    
+                    print "found in FILES:", request.FILES[figKey]
+                    newFileName = makeNewFileName(str(fileName), questionid, figNum)
+                    handle_uploaded_file(request.FILES[figKey], newFileName)
+                    
+                    i = Images(question=question, image=newFileName)
+                    i.save()
+                    
+                else:
+                    lookForFigures = False
+                figNum = figNum + 1
+                    
             
-            #TODO save new table sources
+            tabNum = 1
+            lookForTables = True
             
-            question.save()
+            while lookForTables:
+                tabKey = 'ltable_' + str(tabNum)
+                if tabKey in request.POST:
+                    tableSource = request.POST[tabKey]
+                    print "there was an additional table, with the expected key: ", tableSource
+
+                    t = Tables(question=question, table=tableSource)
+                    t.save()
+                  
+                    
+                else:
+                    lookForTables = False
+                tabNum = tabNum + 1
+            
             return redirect('detail', question.pk)
+        else:
+            print "form is not valid?"
     else:
         form = QuestionForm()
     return render(request, 'questions/add.html', {'form': form})
