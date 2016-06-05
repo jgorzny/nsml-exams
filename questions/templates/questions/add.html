@@ -103,7 +103,10 @@ $("#resetInputForFigureSource{{ fig.num }}").click({fileFieldName: "#id_figureso
         <br>
 
          {% if isEdit %}
+         {% if user.is_superuser %}
+
 <a href="{% url 'questions.deleteQuestion' form.instance.pk %}">Delete Question</a>
+{% endif %}
 {% endif %}
     </form>
     

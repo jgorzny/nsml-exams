@@ -29,6 +29,8 @@
 <a href="{% url 'questions.cart.add' question.id %}">Add to Exam</a>
 <br>
 <br>
-<a href="{% url 'questions.deleteQuestion' question.id %}">Delete Question</a>
+{% if user.is_superuser %}
 
+<a href="{% url 'questions.deleteQuestion' question.id %}">Delete Question</a>
+{% endif %}
 {% endblock %}

@@ -263,15 +263,21 @@ def cleanupFigures(question):
 
 @login_required
 def deleteAllQuestions(request):
-    deleteAllQuestionsAndClean()
-    return render(request, 'questions/qalldeleted.html')
+    if request.user.is_superuser:
+        deleteAllQuestionsAndClean()
+        return render(request, 'questions/qalldeleted.html')
+    else:
+        noAccess(request)
             
 @login_required
 def deleteQuestion(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
-    deleteQuestionAndClean(question)
-    return render(request, 'questions/qdeleted.html')
-    
+    if request.user.is_superuser:
+        question = get_object_or_404(Question, pk=question_id)
+        deleteQuestionAndClean(question)
+        return render(request, 'questions/qdeleted.html')
+    else:
+        noAccess(request)
+        
 #Helper, not called by URL directly
 def deleteQuestionAndClean(question):
     images = Images.objects.filter(question=question)
@@ -280,7 +286,15 @@ def deleteQuestionAndClean(question):
     tables = Tables.objects.filter(question=question)
     for t in tables:
         t.delete()
+    
+    tags = question.get_tags()
+    
     question.delete()
+    
+    for tag in tags:
+        tcount = TaggedItem.objects.get_by_model(Question, tag).count()
+        if tcount == 0:
+            tag.delete()
     
 #Helper, not called by URL directly    
 def deleteAllQuestionsAndClean():
@@ -426,6 +440,10 @@ def emptyCart(request):
 @login_required
 def generateOptions(request):
     return render(request, 'questions/generate.html')   
+
+#Helper, never meant to be called by URL directly:
+def noAccess(request):
+    return render(request, 'denied.html')
 
 @login_required
 def makeExam(request):
