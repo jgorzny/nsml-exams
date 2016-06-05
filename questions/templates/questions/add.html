@@ -5,7 +5,7 @@
     <h1>Question</h1>
     <form enctype="multipart/form-data" method="POST" class="post-form" >{% csrf_token %}
         {{ form.as_p }}
-        
+       
         <script type='text/javascript' src='http://code.jquery.com/jquery-1.8.2.js'></script>
     <script type="text/javascript">
 
@@ -100,5 +100,13 @@ $("#resetInputForFigureSource{{ fig.num }}").click({fileFieldName: "#id_figureso
 
 <br>
         <button type="submit" class="save btn btn-default">Save</button>
+        <br>
+
+         {% if isEdit %}
+<a href="{% url 'questions.deleteQuestion' form.instance.pk %}">Delete Question</a>
+{% endif %}
     </form>
+    
+
+    
 {% endblock %}

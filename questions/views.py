@@ -76,7 +76,7 @@ def add(request):
             print "form is not valid?"
     else:
         form = QuestionForm()
-    return render(request, 'questions/add.html', {'form': form})
+    return render(request, 'questions/add.html', {'form': form, 'isEdit': False})
 
 @login_required	
 def edit(request, question_id):
@@ -102,7 +102,7 @@ def edit(request, question_id):
             return redirect('detail', question.pk)
     else:
         form = QuestionForm(instance=question)
-    return render(request, 'questions/add.html', {'form': form})	
+    return render(request, 'questions/add.html', {'form': form, 'isEdit': True})	
 
 #Helper - not called by URL  
 def getDynamicFormElements(request, questionid, question, editMode):
@@ -260,8 +260,34 @@ def cleanupFigures(question):
         f.num = min(i+1, f.num)
         f.save()        
             
+
+@login_required
+def deleteAllQuestions(request):
+    deleteAllQuestionsAndClean()
+    return render(request, 'questions/qalldeleted.html')
             
+@login_required
+def deleteQuestion(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    deleteQuestionAndClean(question)
+    return render(request, 'questions/qdeleted.html')
     
+#Helper, not called by URL directly
+def deleteQuestionAndClean(question):
+    images = Images.objects.filter(question=question)
+    for i in images:
+        i.delete()
+    tables = Tables.objects.filter(question=question)
+    for t in tables:
+        t.delete()
+    question.delete()
+    
+#Helper, not called by URL directly    
+def deleteAllQuestionsAndClean():
+    questions = Question.objects.all()
+    for q in questions:
+        deleteQuestionAndClean(q)
+
 @login_required	
 def search(request):
     form = QuestionSearch()

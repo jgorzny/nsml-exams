@@ -13,5 +13,11 @@
     <p>No questions are available.</p>
 {% endif %}
 
+
 <a href="{% url 'add' %}">Add a question</a>
+<br>
+Dump all questions? Can't be undone.
+<br>
+<a href="{% url 'questions.deleteAll' %}">Delete All Questions</a>
+
 {% endblock %}
