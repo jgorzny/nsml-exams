@@ -31,7 +31,8 @@ class Question(models.Model):
     last_used = models.DateTimeField('date last used',default=datetime.now)
     num_used = models.PositiveIntegerField(default=0)
 
-
+    def __unicode__(self):
+        return u'%s %s' % ("Question",self.pk)
     
     def get_tags(self):
         return Tag.objects.get_for_object(self) 
@@ -59,6 +60,9 @@ class Images(models.Model):
     image =  models.FileField(default='',blank=True, null=True) 
     num = models.PositiveIntegerField(default=0)
     figure_source = models.TextField(max_length=200,default='Figure source')
+
+    def __unicode__(self):
+        return u'%s %s' % ("Image",self.pk)    
     
     def get_fig_name(self):
         print "figure name is:", self.image.name
@@ -68,6 +72,9 @@ class Tables(models.Model):
     question = models.ForeignKey(Question, default=None)
     table = models.TextField(max_length=200,default='Table source') 
     num = models.PositiveIntegerField(default=0)
+    
+    def __unicode__(self):
+        return u'%s %s' % ("Table",self.pk)     
     
 class QuestionForm(ModelForm):
     class Meta:
