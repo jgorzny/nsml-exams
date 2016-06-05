@@ -1,0 +1,579 @@
+import java.util.Scanner;
+import java.io.*;
+//import java.util.concurrent.*;
+
+public class RunExperiment {
+  
+  static String div = "/";
+  
+  public static void main(String[] args) {
+    long systemStartTime =  System.nanoTime();
+    System.out.println("Starting to run experiment " + args[0] + " at " + systemStartTime);
+    String experimentName = args[0];
+    String listOfProofs = args[1];
+    String linesToSkip = args[2];
+    String proofsDir = args[3];
+    String outputDir = args[4];
+    String statsFileName = args[5];
+    String executableName = args[6];
+    String flags = args[7];
+    String errorFile = args[8];
+    String outputExtension = args[9];
+    String exeNameShort = args[10];
+    
+    //String problemDirectory = "/home1e/jgorzny/GSoC14/TPTP-v6.1.0/Problems";
+    //System.err.println("%Problem");
+    
+    int linesToSkipInt = Integer.valueOf(linesToSkip);
+    
+    
+    try {
+      FileReader proofListReader = new FileReader(listOfProofs);
+      BufferedReader bufferedProofListReader = new BufferedReader(proofListReader);
+      
+      for(int i=0;i<linesToSkipInt; i++){
+        String header = bufferedProofListReader.readLine();
+        System.out.println("Header: " + header);
+      }
+      
+      int count = 0;
+      int errorCount = 0;
+      
+      makedirs(outputDir);
+      makedirs(outputDir + div + "logs");
+      
+File yourFile = new File(errorFile);
+System.out.println("trying to make: " +  errorFile + " and " + statsFileName);
+if(!yourFile.exists()) {
+    yourFile.createNewFile();
+}
+
+File yourFileStats = new File(statsFileName);
+if(!yourFileStats.exists()) {
+    yourFileStats.createNewFile();
+}
+
+
+      PrintWriter errorWriter = new PrintWriter(errorFile, "UTF-8");
+      PrintWriter statWriter = new PrintWriter(statsFileName, "UTF-8");
+      
+      statWriter.println("Starting experiment " + experimentName + " at " + systemStartTime);
+      
+      while(bufferedProofListReader.ready()){
+        String line = bufferedProofListReader.readLine();
+        
+        if(line.length() == 0){
+          break;
+        }
+        
+        Scanner lineScanner = new Scanner(line);
+        String problemName =  lineScanner.next();
+        
+        String problemFileName = proofsDir + div + problemName;
+        
+        String outputfile = null;
+        if(exeNameShort.equals("E")){
+            //define outputfile
+            outputfile = outputDir  + problemName + "." + outputExtension + "-long";
+        }
+        if(exeNameShort.equals("E")){
+            //redefine output extension so that it's not overriden
+            outputExtension = outputExtension + "-backup";
+        }
+        
+        String[] processCommand = makeCommand(executableName, flags, problemFileName, exeNameShort, outputfile, problemName, outputDir);
+        long startTime = System.nanoTime();
+        /*
+        Process process = null;
+        
+        if(exeNameShort.equals("E")){
+            process = Runtime.getRuntime().exec(processCommand); 
+            LogStreamReader lsr = new LogStreamReader(process.getInputStream());
+            Thread thread = new Thread(lsr, "LogStreamReader");
+            thread.start();
+        }else {
+            process = Runtime.getRuntime().exec(processCommand); 
+        }*/
+        
+        Process process = Runtime.getRuntime().exec(processCommand); 
+       Thread.sleep(300000);
+        try {
+          
+          if (process.exitValue()==0){
+            //note that we never actually tell our process to end. So we shouldn't see this.
+            //instead the 'window' remains open, so we can collect data. It is eventually destroyed.
+                     //   throw new Exception("Process was terminated. This was not expected behaviour.");
+            try {
+				System.out.println("Exit value was 0.");
+				errorCount = errorCount + processProcess(process, outputDir, problemName, outputExtension, exeNameShort, errorWriter, statWriter, startTime, outputfile);
+            } catch (Exception e) {
+				lineScanner.close();
+				throw new Exception("Attempted to process a finished process and failed.");
+            }
+          } else {
+				System.out.println("Exit value was not 0.");
+				errorCount = errorCount + 1;
+				processProcess(process, outputDir, problemName, outputExtension, exeNameShort, errorWriter, statWriter, startTime, outputfile);
+		  }
+        } catch (IllegalThreadStateException ex) {
+          //process wasn't exited, so we expect it to be running (for now)
+          try {
+			  System.out.println("IllegalThreadStateException caught");
+            errorCount = errorCount + processProcess(process, outputDir, problemName, outputExtension, exeNameShort, errorWriter, statWriter, startTime, outputfile);
+          } catch (Exception e) {
+           lineScanner.close();
+            throw new Exception("Attempted to process an unfinished process and failed.");
+          }
+
+        }
+        
+        lineScanner.close();
+        count++;
+        
+        
+        
+        if(count % 10 == 0){
+          System.out.println("Processed " + count + " problems.");
+        }
+      }
+
+      errorWriter.close();
+      long endSystemTime = System.nanoTime();
+      statWriter.println("Done; processed " + count + " problems. (" + errorCount + " errors). time completed: " + endSystemTime);
+      System.out.println("Done; processed " + count + " problems. (" + errorCount + " errors)");
+      statWriter.close();
+      
+      bufferedProofListReader.close();
+    } catch (Exception e) {
+	  System.out.println("Exception occurred:");
+	  System.out.println(e);
+      e.printStackTrace();
+    }
+  }
+
+
+  public static void makedirs(String firstDir){
+File theDir = new File(firstDir);
+
+// if the directory does not exist, create it
+if (!theDir.exists()) {
+    try{
+        theDir.mkdir();
+    } 
+    catch(Exception se){
+        //handle it //TODO: this
+    }        
+}
+    
+        
+  }
+  
+  private static int makeRealProofFile(String outputfile, String outputDir, String problemName, String outputExtension, 
+  String exeNameShort, PrintWriter errorWriter, PrintWriter statWriter, long startTime) throws Exception {
+      
+      try {
+      if(exeNameShort.equals("E")){
+            System.out.println("Migrating E Proof.");
+            String newFile = outputDir + div + problemName + "." + outputExtension.substring(0, outputExtension.length()-("-backup".length()));
+        PrintWriter writer = new PrintWriter(newFile, "UTF-8"); //this will be the final proof file.
+            PrintWriter sewriter = new PrintWriter(outputDir + div + problemName + "." + outputExtension +"-error", "UTF-8");//probably will be always empty
+            System.out.println("Reading E proof from " + outputfile);
+            FileReader in = new FileReader(outputfile);
+            BufferedReader fileReader = new BufferedReader(in);
+            System.out.println("Writing E proof to " + newFile);
+           
+            ResultData resultData =  processE(fileReader, writer, errorWriter, problemName, sewriter);
+            double result = resultData.getT();
+			int ec = resultData.getE();
+            if(ec > 0){
+              System.out.println("E - EC > 0 (2)");
+              //dumpError(errorReader, outputDir, problemName, sewriter);
+              statWriter.println(problemName +",0,"+startTime+",-1");
+              return 1;
+            } else {
+              System.out.println("E - EC <= 0 (2)");
+              statWriter.println(problemName +",1,"+startTime+","+result+","+resultData.getL()+","+resultData.getD());
+              return 0;
+            }            
+            
+      }
+      } catch (Exception e){
+          System.out.println("Error in MakeRealProofFile");
+          e.printStackTrace();
+      }
+      return 1; //Only supports E right now.
+      
+  }
+  
+  
+  private static int processProcess(Process process, String outputDir, String problemName, String outputExtension, String exeNameShort,
+                                    PrintWriter errorWriter, PrintWriter statWriter, long startTime, String outputfile) throws Exception {
+          
+          if(outputfile != null){
+              return makeRealProofFile(outputfile, outputDir, problemName, outputExtension, exeNameShort, errorWriter, statWriter, startTime);
+          }
+          
+          BufferedReader outputReader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+          BufferedReader errorReader = new BufferedReader ( new InputStreamReader (process.getErrorStream()));
+          
+          int errorCount = 0;
+          System.out.println("outputdir: " + outputDir);
+          System.out.println("problemName: " + problemName);
+          
+          makeDirectoriesIfNecessary(outputDir, problemName);
+          
+          PrintWriter specificErrorWriter = new PrintWriter(outputDir + div + problemName + ".elog", "UTF-8");
+          PrintWriter writer = new PrintWriter(outputDir + div + problemName + "." + outputExtension, "UTF-8");
+          
+          
+          if(exeNameShort.equals("SPASS")) {
+            ResultData resultData = processSPASS(outputReader, writer, errorWriter, problemName, specificErrorWriter);
+            double result = resultData.getT();
+			int ec = resultData.getE();
+            if(ec > 0){
+              dumpError(errorReader, outputDir, problemName, specificErrorWriter);
+              //errorCount++;
+              errorCount = errorCount + resultData.getE();
+              statWriter.println(problemName +",0,"+startTime+",-1");
+            } else {
+              statWriter.println(problemName +",1,"+startTime+","+result+","+resultData.getL()+","+resultData.getD());
+              
+            }
+          } else if (exeNameShort.equals("E")) {
+            System.out.println("Processing E process");
+            ResultData resultData = processE(outputReader, writer, errorWriter, problemName, specificErrorWriter);
+            double result = resultData.getT();
+			int ec = resultData.getE();
+            if(ec > 0){
+              System.out.println("E - EC > 0");
+              dumpError(errorReader, outputDir, problemName, specificErrorWriter);
+              //errorCount++;
+              errorCount = errorCount + resultData.getE();
+              statWriter.println(problemName +",0,"+startTime+",-1");
+            } else {
+              System.out.println("E - EC <= 0");
+              statWriter.println(problemName +",1,"+startTime+","+result+","+resultData.getL()+","+resultData.getD());
+              
+            }
+          }
+		  statWriter.flush();
+          process.destroy();
+          return errorCount;
+  }
+  
+  private static String[] makeCommand(String exe, String flags, String problem, String exeNameShort, String outputfilename, String problemName, String outputDir){
+    System.out.println("Problem starting: " + problem);
+    System.out.println("Flags: "+flags);
+    String[] actualFlags = null;
+    if(exeNameShort.equals("E")){
+        actualFlags = flags.trim().split(" -");
+    } else {
+     actualFlags = flags.trim().split("-");
+    }
+    
+    for(int i = 0; i < actualFlags.length; i++){
+        System.out.println(actualFlags[i]);
+    }    
+    
+    String[] out=null;
+    int lastIndex = actualFlags.length-1;
+    int length = actualFlags.length-1;
+    if(outputfilename == null){
+        System.out.println("No outputfile given");
+     out = new String[actualFlags.length-1];
+     lastIndex = lastIndex - 1;
+    } else {
+     out = new String[3+actualFlags.length];  
+     lastIndex = actualFlags.length +2; 
+     length = length + 2;     
+    }
+    out[0]=exe;
+    
+    for(int i = 1; i < length; i++){
+        if(exeNameShort.equals("E")){
+            String prefix = "-";
+            if(i == 1){
+                prefix = "";
+            } else {
+                prefix ="-";
+            }
+            
+            out[i]=prefix+actualFlags[i-1].trim();
+        } else {
+            System.out.println("AF: " + actualFlags[i].trim());
+            if(actualFlags[i].trim().length() == 0){ continue; }
+            out[i]="-"+actualFlags[i].trim();
+        }
+    }
+    
+    if(outputfilename != null){
+        if(exeNameShort.equals("E")){
+            out[lastIndex-1] = "--output-file="+outputfilename;// "--output-file=\""+outputfilename+"\"";
+            System.out.println("Appended additional flag: " + out[lastIndex-1]);
+             makeDirectoriesIfNecessary(outputDir, problemName);
+        }
+    }
+    if(exeNameShort.equals("E")){
+        out[lastIndex]=problem;//"\""+problem+"\"";
+    } else {
+    out[lastIndex]=problem;
+    }
+    for(int i = 0; i < lastIndex+1; i++){
+        System.out.println(out[i]);
+    }
+    
+    return out;
+    
+  }
+  
+  
+  private static void makeDirectoriesIfNecessary(String base, String problem){
+    makeDirectoriesIfNecessaryWin( base,  problem);
+    makeDirectoriesIfNecessaryNix( base,  problem);
+    }
+    
+  
+  private static void makeDirectoriesIfNecessaryWin(String base, String problem){
+    int firstIndex = problem.indexOf("\\");
+    //System.out.println("P: " + problem);
+    if(firstIndex < 0){
+      return;
+    }
+    String firstSubdir = base + div + problem.substring(0, firstIndex);
+
+    String problemShortened = problem.substring(firstIndex+1);
+
+File theDir = new File(firstSubdir);
+
+// if the directory does not exist, create it
+if (!theDir.exists()) {
+    try{
+        theDir.mkdir();
+    } 
+    catch(Exception se){
+        //handle it //TODO: this
+    }        
+}   
+
+if(firstIndex >= 0) { //might be more. let's fix that
+    makeDirectoriesIfNecessary(firstSubdir, problemShortened);
+  }
+  }
+
+  private static void makeDirectoriesIfNecessaryNix(String base, String problem){
+    int firstIndex = problem.indexOf("/");
+    //System.out.println("P: " + problem);
+    if(firstIndex < 0){
+      return;
+    }
+    String firstSubdir = base + div + problem.substring(0, firstIndex);
+    //System.out.println("FSD: " + firstSubdir);
+    String problemShortened = problem.substring(firstIndex+1);
+    //System.out.println("PS: " + problemShortened);
+File theDir = new File(firstSubdir);
+
+// if the directory does not exist, create it
+if (!theDir.exists()) {
+    try{
+        theDir.mkdir();
+    } 
+    catch(Exception se){
+        //handle it //TODO: this
+    }        
+}
+    
+    if(firstIndex >= 0) { //might be more. let's fix that
+      makeDirectoriesIfNecessary(firstSubdir, problemShortened);
+    }
+  }
+  
+  private static void dumpError(BufferedReader errorReader, String outputDir, String problemName, PrintWriter specificErrorWriter) throws Exception{
+    
+    while(true){  
+      String s = errorReader.readLine();
+      if(s==null){
+        break;
+      }
+      specificErrorWriter.println(s);
+      specificErrorWriter.flush();
+      
+    }
+    
+  }
+  
+  private static ResultData processSPASS(BufferedReader outputReader, PrintWriter writer, PrintWriter errorWriter, String problemName, PrintWriter specificErrorWriter) throws Exception {
+    int errorCount = 0;
+    boolean recordLine = false;
+    int length = -1;
+    int depth = -1;
+    int proofLineCounter = 0;
+    double executedTime = -1;
+    
+    
+    
+    while(true){
+      String s = outputReader.readLine();
+      System.out.println("Line: "  + s);
+      specificErrorWriter.println(s);
+      specificErrorWriter.flush();
+      if (s != null) {
+        if(s.contains("Here is a proof with depth")){
+          recordLine = true;
+          Scanner proofScanner = new Scanner(s.substring(27));
+          proofScanner.useDelimiter(",");
+          depth = proofScanner.nextInt();
+          proofScanner.useDelimiter(" ");
+          proofScanner.next(); // , 
+          proofScanner.next(); // length
+          length = proofScanner.nextInt();
+          proofScanner.close();
+          System.out.println("Depth: " + depth + " and length: " + length);
+          continue;
+        }
+        
+        if(recordLine && (proofLineCounter < length)) {
+          System.out.println("Line recorded.");
+          writer.println(s);
+          writer.flush();
+          proofLineCounter++;
+        }
+        
+        if(s.contains("SPASS spent")){
+          int endIndex = s.lastIndexOf("on the");
+          Scanner timeScanner = new Scanner(s.substring(11, endIndex).trim());
+          timeScanner.useDelimiter(":");
+          int minutes = timeScanner.nextInt();
+          int seconds = timeScanner.nextInt();
+          double mseconds = timeScanner.nextDouble();
+          timeScanner.close();
+          executedTime = minutes*60000 + seconds*1000 + mseconds;
+        }
+      } else {
+        //if s is null
+
+        if(length == -1){
+          errorCount++;//timeout occurred
+		  errorWriter.println(problemName);
+          errorWriter.flush();
+        }
+
+        if(length > 0 && ((proofLineCounter-1) != length)){
+          errorCount++;
+          errorWriter.println(problemName);
+          errorWriter.flush();
+        }
+        break;
+      }
+    }
+    ResultData resultOut = new ResultData(executedTime, depth, length, errorCount);
+    return resultOut;
+  }
+
+  private static ResultData processE(BufferedReader outputReader, PrintWriter writer, PrintWriter errorWriter, String problemName, PrintWriter specificErrorWriter) throws Exception {
+    int errorCount = 0;
+    boolean recordLine = false;
+    int length = -1;
+    int depth = -1;
+    int proofLineCounter = 0;
+    double executedTime = -1;
+    
+    boolean completed = false;
+    
+    while(true){
+      String s = outputReader.readLine();
+      System.out.println("Line: "  + s);
+      //System.out.println("l: "  + outputReader.read());
+      specificErrorWriter.println(s);
+      specificErrorWriter.flush();
+      if (s != null) {
+		if(s.contains("# SZS output start CNFRefutation")){
+          recordLine = true;
+		  
+		  continue;
+        }
+        
+		if(s.contains("# SZS output end CNFRefutation")){
+			recordLine = false;
+			completed = true;
+		}
+		
+        if(recordLine) {
+          writer.println(s);
+          proofLineCounter++;
+        }
+        
+		if(s.contains("# Total time")){
+			Scanner timeScanner = new Scanner(s.substring(s.indexOf(':')+1, s.length()-2).trim());
+			double reportedTime = timeScanner.nextDouble();
+			executedTime = reportedTime * 1000;
+							timeScanner.close();
+
+		}
+
+      } else {
+        //if s is null
+
+        if(proofLineCounter == -1){
+          errorCount++;//timeout occurred
+          errorWriter.println(problemName);
+          errorWriter.flush();
+
+        }
+
+        if(length > 0 && !completed){ //never got to the end of the proof
+          errorCount++;
+          errorWriter.println(problemName);
+          errorWriter.flush();
+        }            
+        break;
+      }
+    }
+	length = proofLineCounter;
+    writer.flush();
+    writer.close();
+    ResultData resultOut = new ResultData(executedTime, depth, length, errorCount);
+    return resultOut;
+  }
+
+
+  private static class ResultData {
+    private double t;
+    private int d;
+    private int l;
+    private int e;
+
+    ResultData(double time, int depth, int length, int error){
+      this.t=time;
+      this.d=depth;
+      this.l=length;
+      this.e=error;
+    }
+    
+    public double getT() { return this.t; }
+    public int getD() { return this.d;}
+    public int getL() { return this.l;}
+    public int getE() { return this.e;}
+  }
+  
+  private static class LogStreamReader implements Runnable {
+
+    private BufferedReader reader;
+
+    public LogStreamReader(InputStream is) {
+        this.reader = new BufferedReader(new InputStreamReader(is));
+    }
+
+    public void run() {
+        try {
+            String line = reader.readLine();
+            while (line != null) {
+                System.out.println(line);
+                line = reader.readLine();
+            }
+            //reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+}

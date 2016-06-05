@@ -63,53 +63,13 @@ def add(request):
 
             questionid = question.pk
             
+            
             #print request.POST.keys()
             
-            #note - no id_ for somereason
-            figNum = 1
-            lookForFigures = True
-            while lookForFigures:
-                figKey = 'figure_' + str(figNum)
-                figSKey = 'figuresource_' + str(figNum)
-                if figKey in request.FILES:
-                    fileName = request.FILES[figKey]
-                    print "there was an additional figure, with the expected key: ", fileName
-                    print request.FILES.keys()
-                    
-                    print "found in FILES:", request.FILES[figKey]
-                    newFileName = makeNewFileName(str(fileName), questionid, figNum)
-                    handle_uploaded_file(request.FILES[figKey], newFileName)
-                    
-                    fSource = request.POST[figSKey]
-                    
-                    i = Images(question=question, image=newFileName, num=figNum, figure_source=fSource)
-                    i.save()
-                elif figSKey in request.POST:
-                    fSource = request.POST[figSKey]
-                    
-                    i = Images(question=question, image='', num=figNum, figure_source=fSource)
-                    i.save()
-                else:
-                    lookForFigures = False
-                figNum = figNum + 1
-                    
+            getDynamicFormElements(request, questionid, question, False)
             
-            tabNum = 1
-            lookForTables = True
-            
-            while lookForTables:
-                tabKey = 'ltable_' + str(tabNum)
-                if tabKey in request.POST:
-                    tableSource = request.POST[tabKey]
-                    print "there was an additional table, with the expected key: ", tableSource
-
-                    t = Tables(question=question, table=tableSource, num=tabNum)
-                    t.save()
-                  
-                    
-                else:
-                    lookForTables = False
-                tabNum = tabNum + 1
+            cleanupTables(question)
+            cleanupFigures(question)
             
             return redirect('detail', question.pk)
         else:
@@ -134,13 +94,174 @@ def edit(request, question_id):
             question.pub_date = timezone.now()
             question.save()
 
-            #TODO: copy logic for saving images/tables from add
+            questionid = question.pk
+            getDynamicFormElements(request, questionid, question, True)
+            cleanupTables(question)
+            cleanupFigures(question)
             
             return redirect('detail', question.pk)
     else:
         form = QuestionForm(instance=question)
     return render(request, 'questions/add.html', {'form': form})	
 
+#Helper - not called by URL  
+def getDynamicFormElements(request, questionid, question, editMode):
+    print "Updating dynamic elements..."
+    #figNum = 1
+    #lookForFigures = True
+    
+    #note - no id_ for somereason
+
+    maxUploads = getNumElements("figure_", request.FILES.keys())
+    print "At most",maxUploads,"uploaded files."
+    
+    for figNum in range(1, maxUploads + 1):
+        figKey = 'figure_' + str(figNum)
+        figSKey = 'figuresource_' + str(figNum)
+        print "Looking for", figKey
+        if figKey in request.FILES:
+            fileName = request.FILES[figKey]
+            print "A new file was uplaoded, with key: ", fileName
+            print request.FILES.keys()
+            print "found in FILES:", request.FILES[figKey]
+            
+            #if the filename is empty, we're not adding anything
+            if fileName == '':
+                    #figNum = figNum + 1 #we're going to the next iteration, so we had better do this
+                    continue
+            
+            newFileName = makeNewFileName(str(fileName), questionid, figNum)
+                    
+            handle_uploaded_file(request.FILES[figKey], newFileName)
+            
+            fSource = request.POST[figSKey]
+            #TODO: if image is empty, do not add
+            #TODO: if image is the same as before, do not make a new one
+            
+            existingImage = Images.objects.filter(question=question,num=figNum)
+            print "Existing images:",existingImage
+            
+            #We would normally delete the image associated here, but since we're in this branch
+            #of the if statement, a new file was uploaded; it's okay - we'll just use that one instead.
+            
+                
+            if(not existingImage):
+                print "Adding a new image."
+                i = Images(question=question, image=newFileName, num=figNum, figure_source=fSource)
+                i.save()
+            else:
+                print "Modifying an existing image"
+                i = existingImage[0] #Should only ever be one
+                i.image = newFileName
+                i.figure_source = fSource
+                i.save()
+        elif figKey in request.POST and editMode:
+            #One of the existing images was modified.
+            print figKey, "may have been changed."
+            
+            oldPostKey = "oldfile_" + str(figNum)
+            
+            fileName = request.POST[oldPostKey]
+            print "Which reported the following key", fileName
+            
+            fSource = request.POST[figSKey]
+            
+            existingImage = Images.objects.filter(question=question,num=figNum)
+            print "Existing images:",existingImage
+            
+
+            if(fileName == 'Deleted'):
+                fileName = ''
+                
+                
+            if(not existingImage):
+                #Should never happen.
+                print "Error ocurred; no image found despite it being edited."
+            else:
+                print "Modifying an existing image"
+                i = existingImage[0] #Should only ever be one
+                
+                if fileName == '':
+                    i.delete()
+                else:
+                    #The only think we could be updating is the source, since there was no key in FILES for this figure.
+                    i.figure_source = fSource
+                    i.save()            
+
+        #else:
+        #    lookForFigures = False
+        #figNum = figNum + 1
+            
+    
+    #tabNum = 1
+    #lookForTables = True
+    #print "post keys:",request.POST.keys()
+    maxFigs = getNumElements("ltable_", request.POST.keys())
+    #while lookForTables:
+    for tabNum in range(1, maxFigs + 1):    
+        tabKey = 'ltable_' + str(tabNum)
+        if tabKey in request.POST:
+            tableSource = request.POST[tabKey]
+            print "there was an additional table, with the expected key: ", tableSource
+            
+            existingTable = Tables.objects.filter(question=question,num=tabNum)
+            if not existingTable:
+                print "Adding new table."
+                
+                if not tableSource == 'Table source':
+                    t = Tables(question=question, table=tableSource, num=tabNum)
+                    t.save()
+            else:
+                print "This was an old table."
+                if tableSource == 'Table source':
+                    #Delete the table.
+                    t = existingTable[0]
+                    t.delete()
+                else:
+                    t = existingTable[0]
+                    t.table = tableSource
+                    t.save()
+          
+            
+        #else:
+        #    lookForTables = False
+        #tabNum = tabNum + 1
+    
+#Helper, not called by URL directly    
+def getNumElements(prefix, set):
+    max = 0
+    l = len(str(prefix))
+    for k in set:
+        key = str(k)
+        if not key.startswith(prefix):
+            continue
+        newInt = int(key[l:])
+        if newInt > max:
+            max = newInt
+    return max
+    
+#Helper, not called by URL directly
+def cleanupTables(question):
+    tables = Tables.objects.filter(question=question).order_by("num")
+    count = Tables.objects.filter(question=question).count()
+    
+    for i in range(count):
+        t = tables[i]
+        t.num = min(i+1, t.num)
+        t.save()
+        
+#Helper, not called by URL directly
+def cleanupFigures(question):
+    images = Images.objects.filter(question=question).order_by("num")
+    count = Images.objects.filter(question=question).count()
+    
+    for i in range(count):
+        f = images[i]
+        f.num = min(i+1, f.num)
+        f.save()        
+            
+            
+    
 @login_required	
 def search(request):
     form = QuestionSearch()
