@@ -1,0 +1,26 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+
+        <form action="{% url 'questions.cart.generate' %}" method="POST">{% csrf_token %}
+<textarea rows="4" cols="50" id="header_text" name="header_textarea" type="text">
+Text to put before the questions.
+</textarea>
+<br>
+<textarea rows="4" cols="50" id="footer_text" name="footer_textarea" type="text">
+Text to put after the questions.
+</textarea>
+<br>
+
+    
+  <input type="radio" name="questionlayout" value="sections" required> Sections for Instructions, Questions, and Answers<br>
+  <input type="radio" name="questionlayout" value="together"> Instructions preceed questions, and answers follow them. 
+<br>
+<input type="checkbox" name="images_in_folder" value="imagesInFolder">Put images in '/images/'<br>
+<input type="checkbox" name="figures_in_appendix" value="figuresInAppendix">Put figures in an appendix.<br>
+<input type="checkbox" name="omitPackages" value="omitPackages">Do not include packages<br>
+  
+<br>
+        <input type="submit" value="Generate Exam">
+    </form>
+{% endblock %}

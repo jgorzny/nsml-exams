@@ -8,7 +8,7 @@
     {% for question in cart_question_list %}
 		<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a> <a href="{% url 'questions.cart.remove' question.id %}">Remove from cart</a></li>    {% endfor %}
     </ul>
-    <a href="{% url 'questions.cart.empty' %}">Empty cart</a>  <a href="{% url 'questions.cart.generate' %}">Generate exam</a>
+    <a href="{% url 'questions.cart.empty' %}">Empty cart</a>  <a href="{% url 'questions.cart.options' %}">Generate exam</a>
 {% else %}
     <p>No questions are available.</p>
 {% endif %}

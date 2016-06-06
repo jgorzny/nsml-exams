@@ -303,6 +303,10 @@ def deleteAllQuestionsAndClean():
         deleteQuestionAndClean(q)
 
 @login_required	
+def generateCartOptions(request):
+    return render(request, 'questions/cartoptions.html')        
+        
+@login_required	
 def search(request):
     form = QuestionSearch()
     return render(request, 'questions/search.html', {'form': form})
@@ -439,6 +443,28 @@ def emptyCart(request):
 
 @login_required
 def generateOptions(request):
+    print "POST keys:", request.POST
+    
+    headerText = request.POST['header_textarea']
+    footerText = request.POST['footer_textarea']
+    
+    request.session['exam_header'] = headerText
+    request.session['exam_footer'] = footerText
+    
+    
+    order = request.POST['questionlayout']
+    
+    request.session['exam_order'] = order
+    
+    if 'images_in_folder' in request.POST.keys():
+        request.session['exam_images'] = True 
+        
+    if 'figures_in_appendix' in request.POST.keys():
+        request.session['exam_appendix'] = True
+
+    if 'omitPackages' in request.POST.keys():
+        request.session['exam_omit'] = True
+    
     return render(request, 'questions/generate.html')   
 
 #Helper, never meant to be called by URL directly:
@@ -448,6 +474,8 @@ def noAccess(request):
 @login_required
 def makeExam(request):
     #http://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
+    
+    print "In make: ", request.session['exam_order']
     
     #Make files for each question
     cart = request.session["exam_cart"]
