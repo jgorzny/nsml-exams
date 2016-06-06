@@ -5,6 +5,7 @@ import zipfile
 import StringIO
 import os
 from django.contrib.auth.decorators import login_required
+from datetime import datetime    
 
 
 from django.shortcuts import get_object_or_404, render
@@ -274,6 +275,7 @@ def deleteQuestion(request, question_id):
     if request.user.is_superuser:
         question = get_object_or_404(Question, pk=question_id)
         deleteQuestionAndClean(question)
+        removeFromCartHelper(request, question_id)
         return render(request, 'questions/qdeleted.html')
     else:
         noAccess(request)
@@ -355,20 +357,10 @@ def ajax(request):
         
         if toDelete:
             print "Deleting question.."
-            if "exam_cart" in request.session:
-                cart = request.session["exam_cart"]
-                cart.remove(x)
-                request.session["exam_cart"] = cart
-                #TODO remove session variable if cart is empty
+            removeFromCartHelper(request, x)
         else:
             print "Adding question..."
-            if "exam_cart" in request.session:
-                cart = request.session["exam_cart"]
-                cart.append(x)
-                request.session["exam_cart"] = cart
-            else:
-                cart = [x]
-                request.session["exam_cart"] = cart
+            addQuestionToCart(request, x)
             print request.session["exam_cart"]
         return HttpResponse(json.dumps(response_dict), content_type='application/javascript') 
     elif request.POST.has_key('add_files'):
@@ -416,25 +408,38 @@ def downloadFigure(request, figure_num, question_id):
     
 @login_required
 def store(request, question_id):
-    print("Store request clicked")
+    addQuestionToCart(request, question_id)
+    return render(request, 'questions/qadded.html')
+    
+#Helper, not intended to be called by URL directly
+def addQuestionToCart(request, question_id):
     if "exam_cart" in request.session:
         cart = request.session["exam_cart"]
         cart.append(question_id)
         request.session["exam_cart"] = cart
     else:
         cart = [question_id]
-        request.session["exam_cart"] = cart
-    return render(request, 'questions/qadded.html')
+        request.session["exam_cart"] = cart    
     
 @login_required
 def removeFromCart(request, question_id):
-    if "exam_cart" in request.session:
-        cart = request.session["exam_cart"]
-        cart.remove(question_id)
-        request.session["exam_cart"] = cart
-        print("Question was removed - ",cart)
+    removeFromCartHelper(request, question_id)
     return render(request, 'questions/qremoved.html')
     
+#Helper, not intended to be called by URL directly
+def removeFromCartHelper(request, question_id):
+    if "exam_cart" in request.session:
+            cart = request.session["exam_cart"]
+            if question_id in cart:
+                cart = remove_values_from_list(cart, question_id)
+                request.session["exam_cart"] = cart
+                print("Question was removed - ",cart)
+            if len(cart) == 0: 
+                del request.session["exam_cart"]
+#Helper
+def remove_values_from_list(the_list, val):
+   return [value for value in the_list if value != val]
+   
 @login_required
 def emptyCart(request):
     if "exam_cart" in request.session:
@@ -445,12 +450,14 @@ def emptyCart(request):
 def generateOptions(request):
     print "POST keys:", request.POST
     
+    examName = request.POST['examName']
+    
     headerText = request.POST['header_textarea']
     footerText = request.POST['footer_textarea']
     
     request.session['exam_header'] = headerText
     request.session['exam_footer'] = footerText
-    
+    request.session['examName'] = examName
     
     order = request.POST['questionlayout']
     
@@ -465,6 +472,8 @@ def generateOptions(request):
     if 'omitPackages' in request.POST.keys():
         request.session['exam_omit'] = True
     
+    request.session['fresh_exam'] = True
+    
     return render(request, 'questions/generate.html')   
 
 #Helper, never meant to be called by URL directly:
@@ -475,7 +484,10 @@ def noAccess(request):
 def makeExam(request):
     #http://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
     
-    print "In make: ", request.session['exam_order']
+    print "In make: ", request.session['exam_order'], request.session['exam_cart']
+    
+    freshExam = request.session['fresh_exam']
+    examName = request.session['examName']
     
     #Make files for each question
     cart = request.session["exam_cart"]
@@ -489,14 +501,20 @@ def makeExam(request):
         filenames.append(filename)
         f = open(filename, 'w')
         f.write("Testing\n")
-     
+        
+        question = Question.objects.get(id=qid)
+        
+        question.num_used = question.num_used + 1
+        question.last_usded = datetime.now
+    
         #TODO: if it does exist, check that it is up to date and use it. If it is not update, generate it again.
         
+    request.session['fresh_exam'] = False
         
     # Folder name in ZIP archive which contains the above files
     # E.g [thearchive.zip]/somefiles/file2.txt
-    # TODO: Set this to something better
-    zip_subdir = "Exam"
+   
+    zip_subdir = examName
     zip_filename = "%s.zip" % zip_subdir
 
     # Open StringIO to grab in-memory ZIP contents

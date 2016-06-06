@@ -3,6 +3,7 @@
 {% block content %}
 
         <form action="{% url 'questions.cart.generate' %}" method="POST">{% csrf_token %}
+         Exam name: <input type="text" name="examName"><br>
 <textarea rows="4" cols="50" id="header_text" name="header_textarea" type="text">
 Text to put before the questions.
 </textarea>
