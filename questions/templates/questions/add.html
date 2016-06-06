@@ -61,7 +61,7 @@ function clearOld(event) {
 $("#resetInputForTable{{ tab.num }}").click({fileFieldName: "#id_ltable_{{tab.num}}"}, clearTable);
 {% endfor %}   
 {% for fig in form.instance.get_figures %}
-$("#deleteOldFile{{ fig.num }}").click({fileFieldName: "#span_f_{{fig.num}}", fileFieldButtonName: "#deleteOldFile{{ fig.num }}", oldVal: "{{fig.get_fig_name}}", hiddenFieldName: "#oldfile_actual_{{fig.num}}"}, clearOld);
+$("#deleteOldFile{{ fig.num }}").click({fileFieldName: "#span_f_{{fig.num}}", fileFieldButtonName: "#deleteOldFile{{ fig.num }}", oldVal: "{{fig.get_fig_name_short}}", hiddenFieldName: "#oldfile_actual_{{fig.num}}"}, clearOld);
 $("#resetInputForFigureSource{{ fig.num }}").click({fileFieldName: "#id_figuresource_{{fig.num}}"}, clearSource);
 
 {% endfor %}
@@ -75,7 +75,7 @@ $("#resetInputForFigureSource{{ fig.num }}").click({fileFieldName: "#id_figureso
 
 {% if form.instance %}
 {% for fig in form.instance.get_figures %}
-<p><label for="id_figure_{{fig.num}}">Figure {{fig.num}}:</label> <input name="span_{{fig.num}}" id="span_f_{{fig.num}}" value="{{fig.get_fig_name}}" disabled /> <input name="oldfile_{{fig.num}}" type="hidden" id="oldfile_actual_{{fig.num}}" value="{{fig.get_fig_name}}" />  <button id="deleteOldFile{{fig.num}}" type="button">Delete old file.</button><a href="fig/{{fig.num}}/">Download old figure</a>
+<p><label for="id_figure_{{fig.num}}">Figure {{fig.num}}:</label> <input name="span_{{fig.num}}" id="span_f_{{fig.num}}" value="{{fig.get_fig_name_short}}" disabled /> <input name="oldfile_{{fig.num}}" type="hidden" id="oldfile_actual_{{fig.num}}" value="{{fig.get_fig_name_short}}" />  <button id="deleteOldFile{{fig.num}}" type="button">Delete old file.</button><a href="fig/{{fig.num}}/">Download old figure</a>
 <br> Choose new file: <input id="id_figure_{{fig.num}}" name="figure_{{fig.num}}" type="file" value=""/>  <button id="resetInputForFile{{fig.num}}" type="button" >Remove new upload</button></p>
 <p><label for="id_figuresource_{{fig.num}}">Figure {{fig.num}} source:</label> <textarea cols="40" maxlength="200" rows="10" id="id_figuresource_{{fig.num}}" name="figuresource_{{fig.num}}" type="text" value="{{fig.figure_source}}">{{fig.figure_source}}</textarea><button id="resetInputForFigureSource{{fig.num}}" type="button" >Clear</button></p>
 {% endfor %}

@@ -39,6 +39,20 @@ class Question(models.Model):
         
     def get_figures(self):
         return Images.objects.filter(question=self.pk)
+        
+    def get_figure_names_short(self):
+        figures = self.get_figures()
+        out = []
+        for f in figures:
+            out.append(f.get_fig_name_short())
+        return out
+        
+    def get_figure_names(self):
+        figures = self.get_figures()
+        out = []
+        for f in figures:
+            out.append(f.get_fig_name())
+        return out        
 
     def get_tables(self):
         return Tables.objects.filter(question=self.pk)        
@@ -60,14 +74,18 @@ class Images(models.Model):
     image =  models.FileField(default='',blank=True, null=True) 
     num = models.PositiveIntegerField(default=0)
     figure_source = models.TextField(max_length=200,default='Figure source')
+    short_name = models.TextField(max_length=200,default='filename')
 
     def __unicode__(self):
         return u'%s %s' % ("Image",self.pk)    
     
     def get_fig_name(self):
         print "figure name is:", self.image.name
-        return os.path.basename(self.image.name)
+        return self.image.name
 
+    def get_fig_name_short(self):
+        return self.short_name
+        
 class Tables(models.Model):
     question = models.ForeignKey(Question, default=None)
     table = models.TextField(max_length=200,default='Table source') 

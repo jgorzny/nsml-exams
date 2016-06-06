@@ -23,7 +23,7 @@ from tagging.models import Tag, TaggedItem
 
 import json
 import socket
-
+import shutil
 
 from .models import Question, QuestionForm, QuestionSearch, Images, Tables
 
@@ -38,10 +38,14 @@ def detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     return render(request, 'questions/detail.html', {'question': question})
     
+#Helper
 def makeNewFileName(uploadedName, qid, fnum):
-    return settings.QUESTIONS_DIRS + "question-" + str(qid) + "-" + str(fnum) + uploadedName[-4:]
+    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    return settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep + uploadedName
 
-    
+#Helper    
 def handle_uploaded_file(f, fname):
     with open(fname, 'w') as destination:
         for chunk in f.chunks():
@@ -113,7 +117,7 @@ def getDynamicFormElements(request, questionid, question, editMode):
     
     #note - no id_ for somereason
 
-    maxUploads = getNumElements("figure_", request.FILES.keys())
+    maxUploads = getNumElements("figure_", request.FILES.keys()) + getNumElements("figure_", request.POST.keys())
     print "At most",maxUploads,"uploaded files."
     
     for figNum in range(1, maxUploads + 1):
@@ -148,13 +152,14 @@ def getDynamicFormElements(request, questionid, question, editMode):
                 
             if(not existingImage):
                 print "Adding a new image."
-                i = Images(question=question, image=newFileName, num=figNum, figure_source=fSource)
+                i = Images(question=question, image=newFileName, num=figNum, figure_source=fSource, short_name=fileName)
                 i.save()
             else:
                 print "Modifying an existing image"
                 i = existingImage[0] #Should only ever be one
                 i.image = newFileName
                 i.figure_source = fSource
+                i.short_name=fileName
                 i.save()
         elif figKey in request.POST and editMode:
             #One of the existing images was modified.
@@ -183,6 +188,7 @@ def getDynamicFormElements(request, questionid, question, editMode):
                 i = existingImage[0] #Should only ever be one
                 
                 if fileName == '':
+                    removeImageFile(i)
                     i.delete()
                 else:
                     #The only think we could be updating is the source, since there was no key in FILES for this figure.
@@ -276,14 +282,26 @@ def deleteQuestion(request, question_id):
         question = get_object_or_404(Question, pk=question_id)
         deleteQuestionAndClean(question)
         removeFromCartHelper(request, question_id)
+        removeFiles(question_id)
         return render(request, 'questions/qdeleted.html')
     else:
         noAccess(request)
+
+#Helper
+def removeFiles(qid):
+    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep
+    if os.path.exists(directory):
+        shutil.rmtree(directory)
         
+#Helper
+def removeImageFile(i):
+    os.remove(i.get_fig_name())
+       
 #Helper, not called by URL directly
 def deleteQuestionAndClean(question):
     images = Images.objects.filter(question=question)
     for i in images:
+        removeImageFile(i)
         i.delete()
     tables = Tables.objects.filter(question=question)
     for t in tables:

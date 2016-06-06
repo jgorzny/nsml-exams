@@ -12,7 +12,9 @@
     <li> Notes: {{ question.question_notes}}</li>
     <li> Tags: {{ question.get_tags}}</li>
     
-    <li> Figure Files: {{ question.get_figures }}</li>
+    <li> Figure Files: {{ question.get_figure_names }}</li>
+        <li> Figure Files: {{ question.get_figure_names_short }}</li>
+
 
     <li> Num of tables: {{ question.get_num_tables }}</li>   
 
