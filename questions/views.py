@@ -27,6 +27,29 @@ import shutil
 
 from .models import Question, QuestionForm, QuestionSearch, Images, Tables
 
+#Constant (helper) functions
+
+def cacheMetaExt():
+    return "-meta"
+    
+def cacheQSExt():
+    return "-qs"
+    
+def cacheISExt():
+    return "-is"
+
+def cacheFSExt():
+    return "-fs"
+
+def cacheASExt():
+    return "-As"
+    
+def getCacheDir(qid):
+    return settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
+    
+def getImageDir(qid):
+    return settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep   
+    
 @login_required
 def index(request):
     latest_question_list = Question.objects.order_by('-pub_date')[:5]
@@ -40,17 +63,17 @@ def detail(request, question_id):
     
 #Helper
 def makeNewFileName(uploadedName, qid):
-    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep
+    directory = getImageDir(qid)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    return settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep + uploadedName
+    return directory + uploadedName
 
 #Helper
 def makeCacheFileName(fname, qid):
-    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
+    directory = getCacheDir(qid)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    return settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep + fname
+    return directory + fname
     
 #Helper    
 def handle_uploaded_file(f, fname):
@@ -60,35 +83,161 @@ def handle_uploaded_file(f, fname):
         destination.close()
 
 #Helper
-def makeCachedFile(qid):
+def makeCachedFiles(qid):
     question = Question.objects.get(id=qid)
     time = question.last_edited
     ftime = time.strftime("%a-%d-%b-%Y-%H-%M-%S")
-    fname = str(ftime) + ".txt"
-    fileName = makeCacheFileName(fname, qid)
-    writeQuestionToFile(question, fileName)
+    
+    fnameQS = str(ftime) + cacheQSExt() + ".txt" 
+    fnameIS = str(ftime) + cacheFSExt() + ".txt"
+    fnameFS = str(ftime) + cacheISExt() + ".txt"
+    fnameAS = str(ftime) + cacheASExt() + ".txt"    
+    fnameMeta = str(ftime) + cacheMetaExt() + ".txt"
+    
+    
+    fileNameQS = makeCacheFileName(fnameQS, qid)
+    fileNameIS = makeCacheFileName(fnameIS, qid)
+    fileNameFS = makeCacheFileName(fnameFS, qid)
+    fileNameAS = makeCacheFileName(fnameAS, qid)
+    
+    fileNameMeta = makeCacheFileName(fnameMeta, qid)
+    
+    writeQSToFile(question, fileNameQS)
+    writeISToFile(question, fileNameIS)
+    writeFSToFile(question, fileNameFS)
+    writeFSToFile(question, fileNameAS)
+    
+    writeQMetaToFile(question, fileNameMeta)
     
 #Helper
-def writeQuestionToFile(question, fileName):
+def writeQSToFile(question, fileName):
     f = open(fileName, 'w')
-    f.write("Testing\n")
+    
+    f.write("%Question source.\n")
+    f.write(question.question_text)
+    f.write("\n")
+    
+    f.close()
+
+#Helper
+def writeQSToFile(question, fileName):
+    f = open(fileName, 'w')
+    
+    f.write("%Question source.\n")
+    f.write(question.answer_text)
+    f.write("\n")
+    
     f.close()
     
 #Helper
-def updateCachedFile(qid):
+def writeISToFile(question, fileName):
+    f = open(fileName, 'w')
+    
+    f.write("%Instruction source\n")
+    f.write(question.question_instructions)
+    f.write("\n")
+    
+    f.close()
+
+#Helper
+def writeFSToFile(question, fileName):
+    f = open(fileName, 'w')
+    
+    f.write("Testing\n")
+    
+    f.close()
+
+#Helper
+def writeQMetaToFile(question, fileName):
+    f = open(fileName, 'w')
+    
+    f.write("%Question publish date: \n")
+    f.write("%")
+    f.write(str(question.pub_date))
+    f.write("\n")
+    
+    f.write("%Question description: \n")
+    f.write("%")
+    f.write(question.question_description)
+    f.write("\n")
+    
+    f.write("%Question last edit date: \n")
+    f.write("%")
+    f.write(str(question.last_edited))
+    f.write("\n")
+
+    f.write("%Question number of edits: \n")
+    f.write("%")
+    f.write(str(question.num_edits))
+    f.write("\n")
+    
+    f.write("%Question contributing authors: \n")
+    f.write("%")
+    f.write(question.contributing_authors)
+    f.write("\n")
+    
+    f.write("%Question initial author: \n")
+    f.write("%")
+    f.write(question.initial_author)
+    f.write("\n")    
+
+    f.write("%Question notes: \n")
+    f.write("%")
+    f.write(question.question_notes)
+    f.write("\n")  
+
+    f.write("%Question num used: \n")
+    f.write("%")
+    f.write(str(question.num_used))
+    f.write("\n")  
+    
+    f.write("%Question num used: \n")
+    f.write("%")
+    f.write(str(question.num_used))
+    f.write("\n") 
+
+    f.write("%Question tags: \n")
+    f.write("%")
+    f.write(str(question.get_tags()))
+    f.write("\n") 
+    
+    f.write("%Question last used on: \n")
+    f.write("%")
+    f.write(str(question.last_used))
+    f.write("\n")    
+    
+    
+    f.close()    
+    
+#Helper
+def updateCachedFiles(qid):
     question = Question.objects.get(id=qid)
     time = question.last_edited
     ftimeNew = time.strftime("%a-%d-%b-%Y-%H-%M-%S")
-    fnameNew = str(ftimeNew) + ".txt" 
+    fnameNewQS = str(ftimeNew) + cacheQSExt() + ".txt" 
+    fnameNewIS = str(ftimeNew) + cacheFSExt() + ".txt"
+    fnameNewFS = str(ftimeNew) + cacheISExt() + ".txt"
+    fnameNewMeta = str(ftimeNew) + cacheMetaExt() + ".txt"
+    fnameNewAS = str(ftimeNew) + cacheASExt() + ".txt"
     
-    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
+    
+    directory = getCacheDir(qid)
     currentFiles = os.listdir(directory)
-    print "Current files in update"
+    
+    QSorFSmissing = (not fnameNewQS in currentFiles) or (not fnameNewFS in currentFiles)
+    ISorMetaMissing = (not fnameNewIS in currentFiles) or (not fnameNewMeta in currentFiles)
+    ASmissing = (not fnameNewAS in currentFiles)
+    oneMissing =  QSorFSmissing or ISorMetaMissing or ASmissing
+    
+    if not oneMissing:
+        return
+    
+    #print "Current files in update", currentFiles
     for f in currentFiles:
         os.remove(directory + f)
     
-    if not fnameNew in currentFiles:
-        writeQuestionToFile(question, makeCacheFileName(fnameNew, qid))
+    if oneMissing:
+        makeCachedFiles(qid)
         
  
 @login_required
@@ -114,7 +263,7 @@ def add(request):
             cleanupTables(question)
             cleanupFigures(question)
             
-            makeCachedFile(questionid)
+            makeCachedFiles(questionid)
             
             return redirect('detail', question.pk)
         else:
@@ -318,7 +467,7 @@ def deleteQuestion(request, question_id):
 
 #Helper
 def removeCacheFiles(qid):
-    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
+    directory = getCacheDir(qid)
     if os.path.exists(directory):
         shutil.rmtree(directory)
         
@@ -328,7 +477,7 @@ def removeFiles(qid):
         
 #Helper
 def removeImageFiles(qid):
-    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep
+    directory = getImageDir(qid)
     if os.path.exists(directory):
         shutil.rmtree(directory)
         
@@ -565,7 +714,7 @@ def makeExam(request):
         question.num_used = question.num_used + 1
         question.last_usded = datetime.now
     
-        updateCachedFile(qid) #updates the cached file if necessary
+        updateCachedFiles(qid) #updates the cached file if necessary
         
     request.session['fresh_exam'] = False
         
