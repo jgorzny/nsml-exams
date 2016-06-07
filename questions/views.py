@@ -39,19 +39,58 @@ def detail(request, question_id):
     return render(request, 'questions/detail.html', {'question': question})
     
 #Helper
-def makeNewFileName(uploadedName, qid, fnum):
+def makeNewFileName(uploadedName, qid):
     directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep
     if not os.path.exists(directory):
         os.makedirs(directory)
     return settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep + uploadedName
 
+#Helper
+def makeCacheFileName(fname, qid):
+    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    return settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep + fname
+    
 #Helper    
 def handle_uploaded_file(f, fname):
     with open(fname, 'w') as destination:
         for chunk in f.chunks():
             destination.write(chunk)
         destination.close()
+
+#Helper
+def makeCachedFile(qid):
+    question = Question.objects.get(id=qid)
+    time = question.last_edited
+    ftime = time.strftime("%a-%d-%b-%Y-%H-%M-%S")
+    fname = str(ftime) + ".txt"
+    fileName = makeCacheFileName(fname, qid)
+    writeQuestionToFile(question, fileName)
+    
+#Helper
+def writeQuestionToFile(question, fileName):
+    f = open(fileName, 'w')
+    f.write("Testing\n")
+    f.close()
+    
+#Helper
+def updateCachedFile(qid):
+    question = Question.objects.get(id=qid)
+    time = question.last_edited
+    ftimeNew = time.strftime("%a-%d-%b-%Y-%H-%M-%S")
+    fnameNew = str(ftimeNew) + ".txt" 
+    
+    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
+    currentFiles = os.listdir(directory)
+    print "Current files in update"
+    for f in currentFiles:
+        os.remove(directory + f)
+    
+    if not fnameNew in currentFiles:
+        writeQuestionToFile(question, makeCacheFileName(fnameNew, qid))
         
+ 
 @login_required
 def add(request):
     if request.method == "POST":
@@ -68,13 +107,14 @@ def add(request):
 
             questionid = question.pk
             
-            
             #print request.POST.keys()
             
             getDynamicFormElements(request, questionid, question, False)
             
             cleanupTables(question)
             cleanupFigures(question)
+            
+            makeCachedFile(questionid)
             
             return redirect('detail', question.pk)
         else:
@@ -96,7 +136,7 @@ def edit(request, question_id):
             
         if form.is_valid():
             question = form.save(commit=False)
-            question.pub_date = timezone.now()
+            question.last_edited = timezone.now()
             question.save()
 
             questionid = question.pk
@@ -195,16 +235,9 @@ def getDynamicFormElements(request, questionid, question, editMode):
                     i.figure_source = fSource
                     i.save()            
 
-        #else:
-        #    lookForFigures = False
-        #figNum = figNum + 1
-            
-    
-    #tabNum = 1
-    #lookForTables = True
+
     #print "post keys:",request.POST.keys()
     maxFigs = getNumElements("ltable_", request.POST.keys())
-    #while lookForTables:
     for tabNum in range(1, maxFigs + 1):    
         tabKey = 'ltable_' + str(tabNum)
         if tabKey in request.POST:
@@ -228,11 +261,7 @@ def getDynamicFormElements(request, questionid, question, editMode):
                     t = existingTable[0]
                     t.table = tableSource
                     t.save()
-          
-            
-        #else:
-        #    lookForTables = False
-        #tabNum = tabNum + 1
+
     
 #Helper, not called by URL directly    
 def getNumElements(prefix, set):
@@ -288,7 +317,17 @@ def deleteQuestion(request, question_id):
         noAccess(request)
 
 #Helper
+def removeCacheFiles(qid):
+    directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
+    if os.path.exists(directory):
+        shutil.rmtree(directory)
+        
 def removeFiles(qid):
+    removeCacheFiles(qid)
+    removeImageFiles(qid)
+        
+#Helper
+def removeImageFiles(qid):
     directory = settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep
     if os.path.exists(directory):
         shutil.rmtree(directory)
@@ -515,17 +554,18 @@ def makeExam(request):
     for qid in cart:
     
         #if the file does not already exist, make it
+        #TODO: this needs to change
         filename = settings.QUESTIONS_DIRS + "question" + qid + ".txt"
         filenames.append(filename)
         f = open(filename, 'w')
         f.write("Testing\n")
-        
+        f.close()
         question = Question.objects.get(id=qid)
         
         question.num_used = question.num_used + 1
         question.last_usded = datetime.now
     
-        #TODO: if it does exist, check that it is up to date and use it. If it is not update, generate it again.
+        updateCachedFile(qid) #updates the cached file if necessary
         
     request.session['fresh_exam'] = False
         
