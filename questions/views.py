@@ -42,7 +42,7 @@ def cacheFSExt():
     return "-fs"
 
 def cacheASExt():
-    return "-As"
+    return "-as"
     
 def getCacheDir(qid):
     return settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
@@ -89,8 +89,8 @@ def makeCachedFiles(qid):
     ftime = time.strftime("%a-%d-%b-%Y-%H-%M-%S")
     
     fnameQS = str(ftime) + cacheQSExt() + ".txt" 
-    fnameIS = str(ftime) + cacheFSExt() + ".txt"
-    fnameFS = str(ftime) + cacheISExt() + ".txt"
+    fnameIS = str(ftime) + cacheISExt() + ".txt"
+    fnameFS = str(ftime) + cacheFSExt() + ".txt"
     fnameAS = str(ftime) + cacheASExt() + ".txt"    
     fnameMeta = str(ftime) + cacheMetaExt() + ".txt"
     
@@ -105,7 +105,7 @@ def makeCachedFiles(qid):
     writeQSToFile(question, fileNameQS)
     writeISToFile(question, fileNameIS)
     writeFSToFile(question, fileNameFS)
-    writeFSToFile(question, fileNameAS)
+    writeASToFile(question, fileNameAS)
     
     writeQMetaToFile(question, fileNameMeta)
     
@@ -120,7 +120,7 @@ def writeQSToFile(question, fileName):
     f.close()
 
 #Helper
-def writeQSToFile(question, fileName):
+def writeASToFile(question, fileName):
     f = open(fileName, 'w')
     
     f.write("%Question source.\n")
@@ -143,8 +143,18 @@ def writeISToFile(question, fileName):
 def writeFSToFile(question, fileName):
     f = open(fileName, 'w')
     
-    f.write("Testing\n")
-    
+    figures = question.get_figures()
+    for f in figures:
+        f.write("%Figure " + str(f.num) + "\n")
+        f.write(f.figure_source)
+        f.write("\n")
+        
+    tables = question.get_tables()
+    for t in tables:
+        f.write("%Table " + str(t.num) + "\n")
+        f.write(t.table)
+        f.write("\n")
+        
     f.close()
 
 #Helper
