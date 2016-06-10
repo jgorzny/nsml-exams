@@ -502,6 +502,10 @@ def deleteQuestion(request, question_id):
 #Helper
 def removeCacheFiles(qid):
     directory = getCacheDir(qid)
+    removeDir(directory)
+  
+#Helper
+def removeDir(directory):
     if os.path.exists(directory):
         shutil.rmtree(directory)
         
@@ -763,10 +767,16 @@ def makeExam(request):
     else:
         eAppendix = False   
     
+    tempDir = "NOTREAL"
+    
     if order == "sections":
-        filenames = filenames + makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix)
+        (filesToAdd, tempDir) = makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix)
+        filenames = filenames + filesToAdd
+        
     elif order == "together":
-        filenames = filenames + makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix)
+        (filesToAdd, tempDir) = makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix)
+        filenames = filenames + filesToAdd
+        
 
     
     request.session['fresh_exam'] = False
@@ -794,6 +804,10 @@ def makeExam(request):
     # Must close zip for all contents to be written
     zf.close()
 
+    #Clean temporary files
+    if not tempDir == "NOTREAL":
+        removeDir(tempDir)
+    
     # Grab ZIP file from in-memory, make response with correct MIME-type
     resp = HttpResponse(s.getvalue(), content_type = "application/x-zip-compressed")
     # ..and correct content-disposition
@@ -813,13 +827,12 @@ def updateQuestionStats(cart):
         
 #Helper
 def makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix):
-    #TODO Better way of doing this?
-    #TODO: clean this up after generated?
-    noise = random.randint(1,1000000)
+    tempDirName = getTempDirName(settings.QUESTIONS_DIRS)
     
-    examDir = settings.QUESTIONS_DIRS  + "temp" + str(noise) + os.sep 
+    examDir = settings.QUESTIONS_DIRS  + tempDirName + os.sep 
     if not os.path.exists(examDir):
         os.makedirs(examDir)
+        
     instructionsFile = examDir + examName + "instructions.tex" 
     questionsFile = examDir + examName + "questions.tex"
     answersFile = examDir + examName + "answers.tex"
@@ -904,7 +917,7 @@ def makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix
         texInputFile(mainFile, str(examName) + "appendix.tex")
     
     texDocClose(mainFile)
-    return out 
+    return (out, examDir)
 
 #Helper
 def getFilePath(qDir, substring):
@@ -977,13 +990,22 @@ def texSection(filename, section):
     f.write("\\section{" + str(section) + "}\n")
     f.close()     
     
+#Helper
+def getTempDirName(base):
+    #TODO Better way of doing this?
+    noise = random.randint(1,1000000)
+    out = "temp" + str(noise)
+    while os.path.exists(base + out):
+        noise = random.randint(1,1000000)
+        out = "temp" + str(noise)
+    return out
+    
 #Helper  
 def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix):
-    #TODO Better way of doing this?
-    #TODO: clean this up after generated?
-    noise = random.randint(1,1000000)
     
-    examDir = settings.QUESTIONS_DIRS  + "temp" + str(noise) + os.sep 
+    tempDirName = getTempDirName(settings.QUESTIONS_DIRS)
+    
+    examDir = settings.QUESTIONS_DIRS  + tempDirName + os.sep 
     if not os.path.exists(examDir):
         os.makedirs(examDir)
 
@@ -1053,5 +1075,5 @@ def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendi
         texInputFile(mainFile, str(examName) + "appendix.tex")
     
     texDocClose(mainFile)
-    return out 
+    return (out, examDir)
         
