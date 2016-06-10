@@ -24,6 +24,7 @@ from tagging.models import Tag, TaggedItem
 import json
 import socket
 import shutil
+import random
 
 from .models import Question, QuestionForm, QuestionSearch, Images, Tables
 
@@ -102,16 +103,21 @@ def makeCachedFiles(qid):
     
     fileNameMeta = makeCacheFileName(fnameMeta, qid)
     
-    writeQSToFile(question, fileNameQS)
-    writeISToFile(question, fileNameIS)
-    writeFSToFile(question, fileNameFS)
-    writeASToFile(question, fileNameAS)
+    writeQSToFile(question, fileNameQS, False)
+    writeISToFile(question, fileNameIS, False)
+    writeFSToFile(question, fileNameFS, False)
+    writeASToFile(question, fileNameAS, False)
     
-    writeQMetaToFile(question, fileNameMeta)
+    writeQMetaToFile(question, fileNameMeta, False)
     
 #Helper
-def writeQSToFile(question, fileName):
-    f = open(fileName, 'w')
+def writeQSToFile(question, fileName, append):
+    if append:
+        mode = 'a'
+    else:
+        mode = 'w'
+        
+    f = open(fileName, mode)
     
     f.write("%Question source.\n")
     f.write(question.question_text)
@@ -120,8 +126,12 @@ def writeQSToFile(question, fileName):
     f.close()
 
 #Helper
-def writeASToFile(question, fileName):
-    f = open(fileName, 'w')
+def writeASToFile(question, fileName, append):
+    if append:
+        mode = 'a'
+    else:
+        mode = 'w'
+    f = open(fileName, mode)
     
     f.write("%Question source.\n")
     f.write(question.answer_text)
@@ -130,8 +140,13 @@ def writeASToFile(question, fileName):
     f.close()
     
 #Helper
-def writeISToFile(question, fileName):
-    f = open(fileName, 'w')
+def writeISToFile(question, fileName, append):
+    if append:
+        mode = 'a'
+    else:
+        mode = 'w'
+    
+    f = open(fileName, mode)
     
     f.write("%Instruction source\n")
     f.write(question.question_instructions)
@@ -140,13 +155,18 @@ def writeISToFile(question, fileName):
     f.close()
 
 #Helper
-def writeFSToFile(question, fileName):
-    f = open(fileName, 'w')
+def writeFSToFile(question, fileName, append):
+    if append:
+        mode = 'a'
+    else:
+        mode = 'w'
+        
+    f = open(fileName, mode)
     
     figures = question.get_figures()
-    for f in figures:
-        f.write("%Figure " + str(f.num) + "\n")
-        f.write(f.figure_source)
+    for fig in figures:
+        f.write("%Figure " + str(fig.num) + "\n")
+        f.write(fig.figure_source)
         f.write("\n")
         
     tables = question.get_tables()
@@ -158,8 +178,12 @@ def writeFSToFile(question, fileName):
     f.close()
 
 #Helper
-def writeQMetaToFile(question, fileName):
-    f = open(fileName, 'w')
+def writeQMetaToFile(question, fileName, append):
+    if append:
+        mode = 'a'
+    else:
+        mode = 'w'
+    f = open(fileName, mode)
     
     f.write("%Question publish date: \n")
     f.write("%")
@@ -334,7 +358,7 @@ def getDynamicFormElements(request, questionid, question, editMode):
                     #figNum = figNum + 1 #we're going to the next iteration, so we had better do this
                     continue
             
-            newFileName = makeNewFileName(str(fileName), questionid, figNum)
+            newFileName = makeNewFileName(str(fileName), questionid)
                     
             handle_uploaded_file(request.FILES[figKey], newFileName)
             
@@ -687,6 +711,9 @@ def generateOptions(request):
 
     if 'omitPackages' in request.POST.keys():
         request.session['exam_omit'] = True
+        
+    if 'inputFiles' in request.POST.keys():
+        request.session['qfiles'] = True        
     
     request.session['fresh_exam'] = True
     
@@ -710,22 +737,38 @@ def makeExam(request):
     
     # Files (local path) to put in the .zip
     filenames = []
-    for qid in cart:
     
-        #if the file does not already exist, make it
-        #TODO: this needs to change
-        filename = settings.QUESTIONS_DIRS + "question" + qid + ".txt"
-        filenames.append(filename)
-        f = open(filename, 'w')
-        f.write("Testing\n")
-        f.close()
-        question = Question.objects.get(id=qid)
-        
-        question.num_used = question.num_used + 1
-        question.last_usded = datetime.now
+    updateQuestionStats(cart)
     
-        updateCachedFiles(qid) #updates the cached file if necessary
+    order = request.session['exam_order']
+    
+    if 'qfiles' in request.session:
+        includeSepFiles = request.session['qfiles']
+    else:
+        includeSepFiles = False
         
+    if 'exam_footer' in request.session:
+        efooter = request.session['exam_footer']
+    else:
+        efooter = ""
+
+    if 'exam_header' in request.session:
+        eheader = request.session['exam_header']
+    else:
+        eheader = ""        
+    
+    
+    if 'exam_appendix' in request.session:
+        eAppendix = request.session['exam_appendix']
+    else:
+        eAppendix = False   
+    
+    if order == "sections":
+        filenames = filenames + makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix)
+    elif order == "together":
+        filenames = filenames + makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix)
+
+    
     request.session['fresh_exam'] = False
         
     # Folder name in ZIP archive which contains the above files
@@ -757,3 +800,258 @@ def makeExam(request):
     resp['Content-Disposition'] = 'attachment; filename=%s' % zip_filename
 
     return resp
+    
+#Helper
+def updateQuestionStats(cart):
+    for qid in cart:
+        question = Question.objects.get(id=qid)
+        
+        question.num_used = question.num_used + 1
+        question.last_usded = datetime.now
+    
+        updateCachedFiles(qid)    
+        
+#Helper
+def makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix):
+    #TODO Better way of doing this?
+    #TODO: clean this up after generated?
+    noise = random.randint(1,1000000)
+    
+    examDir = settings.QUESTIONS_DIRS  + "temp" + str(noise) + os.sep 
+    if not os.path.exists(examDir):
+        os.makedirs(examDir)
+    instructionsFile = examDir + examName + "instructions.tex" 
+    questionsFile = examDir + examName + "questions.tex"
+    answersFile = examDir + examName + "answers.tex"
+    mainFile = examDir + examName + "main.tex"
+    
+
+    
+    texOpenEnumerate(instructionsFile)
+    texOpenEnumerate(questionsFile)
+    texOpenEnumerate(answersFile)
+    
+    out = [mainFile, instructionsFile, answersFile, questionsFile]
+    
+    if eAppendix:
+        appendixFile = examDir + examName + "appendix.tex"
+        out = out + [appendixFile]
+    
+    for qid in cart:
+        question = Question.objects.get(id=qid)
+        qDir = getCacheDir(qid)
+        
+        if includeSepFiles:
+            metaCacheFileName = getFilePath(qDir, "-meta")
+            qSourceCacheFileName = getFilePath(qDir, "-qs") 
+            out = out + [qDir + metaCacheFileName, qDir + qSourceCacheFileName]
+            texInputFile(questionsFile,metaCacheFileName)
+            texItem(questionsFile)
+            texInputFile(questionsFile,qSourceCacheFileName)
+            
+            fSourceCacheFileName = getFilePath(qDir, "-fs")
+            if eAppendix:
+                texInputFile(appendixFile,fSourceCacheFileName)
+                out = out + [qDir + fSourceCacheFileName]            
+            else:
+                texInputFile(questionsFile,fSourceCacheFileName)
+                out = out + [qDir + fSourceCacheFileName]
+        else:
+            writeQMetaToFile(question, questionsFile, True)
+            texItem(questionsFile)
+            writeQSToFile(question, questionsFile, True)
+            if eAppendix:
+                writeFSToFile(question, appendixFile, True)
+            else:
+                writeFSToFile(question, questionsFile, True)
+        
+        if includeSepFiles:
+            aSourceCacheFileName = getFilePath(qDir, "-as")
+            out = out + [qDir + aSourceCacheFileName]
+            texItem(answersFile)
+            texInputFile(answersFile,aSourceCacheFileName)
+        else:
+            texItem(answersFile)
+            writeASToFile(question, answersFile, True)
+        
+        if includeSepFiles:
+            iSourceCacheFileName = getFilePath(qDir, "-is")
+            out = out + [qDir + iSourceCacheFileName]
+            texItem(instructionsFile)
+            texInputFile(instructionsFile,iSourceCacheFileName)        
+        else:
+            texItem(instructionsFile)
+            writeISToFile(question, instructionsFile, True)
+            
+        out = out + getImageFiles(qid)
+        
+    texCloseEnumerate(instructionsFile)
+    texCloseEnumerate(questionsFile)
+    texCloseEnumerate(answersFile)
+    
+    texDocHeader(mainFile)
+    texText(mainFile,eheader)
+    texSection(mainFile, str("Instructions"))
+    texInputFile(mainFile, str(examName) + "instructions.tex")
+    texSection(mainFile, str("Questions"))
+    texInputFile(mainFile, str(examName) + "questions.tex")
+    texSection(mainFile, str("Answers"))
+    texInputFile(mainFile, str(examName) + "answers.tex")
+    texText(mainFile,efooter)
+    
+    if eAppendix:
+        texSection(mainFile, str("Appendix"))
+        texInputFile(mainFile, str(examName) + "appendix.tex")
+    
+    texDocClose(mainFile)
+    return out 
+
+#Helper
+def getFilePath(qDir, substring):
+    cachedFiles = os.listdir(qDir)
+    for f in cachedFiles:
+        if substring in f:
+            return f
+    #TODO: handle errors?
+    
+def getImageFiles(qid):
+    imagesDir = getImageDir(qid)
+    out = []
+    if os.path.exists(imagesDir):
+        cachedFiles = os.listdir(imagesDir)
+        for f in cachedFiles:
+            out = out + [imagesDir + str(f)]
+    return out
+    
+    
+#Helper
+def texText(filename, text):
+    f = open(filename, 'a')
+    f.write("\n")
+    f.write(str(text))
+    f.write("\n")
+    f.close()    
+    
+#Helper
+def texItem(filename):
+    f = open(filename, 'a')
+    f.write("\\item")
+    f.close()
+    
+#Helper
+def texOpenEnumerate(filename):
+    f = open(filename, 'a')
+    f.write("\\begin{enumerate}\n")
+    f.close()
+    
+#Helper
+def texCloseEnumerate(filename):
+    f = open(filename, 'a')
+    f.write("\\end{enumerate}\n")
+    f.close()    
+    
+#Helper 
+def texDocHeader(filename):
+    f = open(filename, 'a')
+    f.write("\\documentclass[11pt]{article} \n")
+    f.write("\\begin{document}\n")
+    f.close() 
+
+#Helper
+def texDocClose(filename):    
+    f = open(filename, 'a')
+    f.write("\\end{document}\n")
+    f.close()
+    
+#Helper
+def texInputFile(filename, input):    
+    f = open(filename, 'a')
+    f.write("\\input{")
+    f.write(str(input))
+    f.write("}\n")
+    f.close()
+
+#Helper
+def texSection(filename, section):    
+    f = open(filename, 'a')
+    f.write("\\section{" + str(section) + "}\n")
+    f.close()     
+    
+#Helper  
+def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix):
+    #TODO Better way of doing this?
+    #TODO: clean this up after generated?
+    noise = random.randint(1,1000000)
+    
+    examDir = settings.QUESTIONS_DIRS  + "temp" + str(noise) + os.sep 
+    if not os.path.exists(examDir):
+        os.makedirs(examDir)
+
+    mainFile = examDir + examName + "main.tex"
+    
+    texDocHeader(mainFile)
+    texText(mainFile,eheader)
+    
+    out = [mainFile]
+    
+    if eAppendix:
+        appendixFile = examDir + examName + "appendix.tex"
+        out = out + [appendixFile]
+    
+    for qid in cart:
+        question = Question.objects.get(id=qid)
+        qDir = getCacheDir(qid)
+        
+        texSection(mainFile, str("Question ") + str(qid) )
+
+        
+        if includeSepFiles:
+            metaCacheFileName = getFilePath(qDir, "-meta")
+            qSourceCacheFileName = getFilePath(qDir, "-qs") 
+            out = out + [qDir + metaCacheFileName, qDir + qSourceCacheFileName]
+            texInputFile(mainFile,metaCacheFileName)
+            texInputFile(mainFile,qSourceCacheFileName)
+            
+            fSourceCacheFileName = getFilePath(qDir, "-fs")
+            if eAppendix:
+                texInputFile(appendixFile,fSourceCacheFileName)
+                out = out + [qDir + fSourceCacheFileName]            
+            else:
+                texInputFile(mainFile,fSourceCacheFileName)
+                out = out + [qDir + fSourceCacheFileName]
+        else:
+            writeQMetaToFile(question, mainFile, True)
+            writeQSToFile(question, mainFile, True)
+            if eAppendix:
+                writeFSToFile(question, appendixFile, True)
+            else:
+                writeFSToFile(question, mainFile, True)
+        
+        if includeSepFiles:
+            aSourceCacheFileName = getFilePath(qDir, "-as")
+            out = out + [qDir + aSourceCacheFileName]
+            texInputFile(mainFile,aSourceCacheFileName)
+        else:
+            writeASToFile(question, mainFile, True)
+        
+        if includeSepFiles:
+            iSourceCacheFileName = getFilePath(qDir, "-is")
+            out = out + [qDir + iSourceCacheFileName]
+            texInputFile(mainFile,iSourceCacheFileName)        
+        else:
+            writeISToFile(question, mainFile, True)
+            
+        out = out + getImageFiles(qid)
+        
+    
+
+
+    texText(mainFile,efooter)
+    
+    if eAppendix:
+        texSection(mainFile, str("Appendix"))
+        texInputFile(mainFile, str(examName) + "appendix.tex")
+    
+    texDocClose(mainFile)
+    return out 
+        
