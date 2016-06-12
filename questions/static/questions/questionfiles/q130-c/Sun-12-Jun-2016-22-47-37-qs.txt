@@ -1,0 +1,2 @@
+%Question source.
+Let $\Sigma=\{0,1\}$. Suppose that $A\subseteq \Sigma^*$ is NP-complete, $B \subseteq \Sigma^*$ is in P, $A\cap B = \emptyset$ and $A\cup B \neq \Sigma^*$. Prove that $A\cup B$ is NP-Complete.

@@ -58,7 +58,7 @@ Which returned the following questions:<br>
 
     <ul>
     {% for question in questions %}
-		<li><a href="{% url 'detail' question.id %}">{{ question.question_text }}</a> 
+		<li><a href="{% url 'detail' question.id %}">{% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}</a> 
         <form method="post" name="example form" >
 {% csrf_token %}
         <button id="questionbutton{{ question.id }}" type="submit" form="form1" value="{{ question.id }}">{% if question in cart_question_list %}Remove from exam{% else %}Add to exam{% endif %}</button>

@@ -17,11 +17,11 @@ import os
 
 # Create your models here.
 class Question(models.Model):
-    question_text = models.TextField(max_length=200,default='Question source')
+    question_text = models.TextField(max_length=2000,default='Question source')
     pub_date = models.DateTimeField('date published')
     question_description = models.TextField(max_length=200,default='Description - web/comments only')
-    question_instructions = models.TextField(max_length=200,default='Instructions source')
-    answer_text = models.TextField(max_length=200,default='Answer source')
+    question_instructions = models.TextField(max_length=2000,default='Instructions source')
+    answer_text = models.TextField(max_length=2000,default='Answer source')
     last_edited = models.DateTimeField('date last edited',default=datetime.now)
     num_edits = models.PositiveIntegerField(default=0)
     initial_author = models.CharField(max_length=200,default='None yet')
@@ -69,11 +69,35 @@ class Question(models.Model):
         figureSet = Images.objects.filter(question=self.pk)
         return figureSet.count() + 1
         
+    #TODO: generates broken HTML (first \item generates a </li> that closes nothing)
+    def getHTMLQuestionSource(self):
+        print "getting HTML source..."
+        out = self.question_text.replace("\\begin{itemize}", "<ul>")
+        out = out.replace("\\end{itemize}", "</li></ul>")
+        out = out.replace("\\item", "</li><li>")
+        out = out.replace("<li></li>","")
+        out = out.replace("<li></li>","")
+        out = out.replace("<li>\n</li>","")        
+        print out
+        return out
+        
+    #TODO: generates broken HTML (first \item generates a </li> that closes nothing)        
+    def getHTMLAnswerSource(self):
+        print "getting HTML source..."
+        out = self.answer_text.replace("\\begin{itemize}", "<ul>")
+        out = out.replace("\\end{itemize}", "</li></ul>")
+        out = out.replace("\\item", "</li><li>")
+        out = out.replace("<li> </li>","")
+        out = out.replace("<li></li>","")
+        out = out.replace("<li>\n</li>","")
+        print out
+        return out        
+        
 class Images(models.Model):
     question = models.ForeignKey(Question, default=None)
     image =  models.FileField(default='',blank=True, null=True) 
     num = models.PositiveIntegerField(default=0)
-    figure_source = models.TextField(max_length=200,default='Figure source')
+    figure_source = models.TextField(max_length=2000,default='Figure source')
     short_name = models.TextField(max_length=200,default='filename')
 
     def __unicode__(self):
@@ -88,7 +112,7 @@ class Images(models.Model):
         
 class Tables(models.Model):
     question = models.ForeignKey(Question, default=None)
-    table = models.TextField(max_length=200,default='Table source') 
+    table = models.TextField(max_length=2000,default='Table source') 
     num = models.PositiveIntegerField(default=0)
     
     def __unicode__(self):

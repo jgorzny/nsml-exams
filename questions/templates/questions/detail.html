@@ -2,18 +2,18 @@
 
 {% block content %}
 
-<h1>{{ question.question_text }}</h1>
+<h1> {% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %} </h1>
 <ul>
 	<li> Published on: {{ question.pub_date}} </li>
     <li> Description: {{ question.question_description}} </li>
     <li> Instructions: {{ question.question_instructions }}</li>
-    <li> Answer: {{ question.answer_text}}</li>
+<li> Answer: {% autoescape off %}{{ question.getHTMLAnswerSource}}{% endautoescape  %}</li>
 
     <li> Notes: {{ question.question_notes}}</li>
     <li> Tags: {{ question.get_tags}}</li>
     
     <li> Figure Files: {{ question.get_figure_names }}</li>
-        <li> Figure Files: {{ question.get_figure_names_short }}</li>
+    <li> Figure Files: {{ question.get_figure_names_short }}</li>
 
 
     <li> Num of tables: {{ question.get_num_tables }}</li>   
