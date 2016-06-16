@@ -120,7 +120,8 @@ def writeQSToFile(question, fileName, append):
     f = open(fileName, mode)
     
     f.write("%Question source.\n")
-    f.write(question.question_text)
+    text  = question.question_text.replace('\r\n', '\n').replace('\r', '\n')
+    f.write(text)
     f.write("\n")
     
     f.close()
@@ -134,7 +135,8 @@ def writeASToFile(question, fileName, append):
     f = open(fileName, mode)
     
     f.write("%Question source.\n")
-    f.write(question.answer_text)
+    text  = question.answer_text.replace('\r\n', '\n').replace('\r', '\n')
+    f.write(text)
     f.write("\n")
     
     f.close()
@@ -709,15 +711,59 @@ def generateOptions(request):
     
     if 'images_in_folder' in request.POST.keys():
         request.session['exam_images'] = True 
+    else:
+        if 'exam_images' in request.session:
+            del request.session['exam_images']
         
     if 'figures_in_appendix' in request.POST.keys():
         request.session['exam_appendix'] = True
+    else:
+        if 'exam_appendix' in request.session:
+            del request.session['exam_appendix']        
 
     if 'omitPackages' in request.POST.keys():
         request.session['exam_omit'] = True
+    else:
+        if 'exam_omit' in request.session:
+            del request.session['exam_omit']        
         
     if 'inputFiles' in request.POST.keys():
-        request.session['qfiles'] = True        
+        request.session['qfiles'] = True  
+    else:
+        if 'qfiles' in request.session:
+            del request.session['qfiles']    
+
+    #Omit sections options
+    if 'omitQuestionSource' in request.POST.keys():
+        request.session['omitQuestionSource'] = True  
+    else:
+        if 'omitQuestionSource' in request.session:
+            del request.session['omitQuestionSource']         
+
+    if 'omitInstructions' in request.POST.keys():
+        request.session['omitInstructions'] = True  
+    else:
+        if 'omitInstructions' in request.session:
+            del request.session['omitInstructions']    
+
+    if 'omitAnswers' in request.POST.keys():
+        request.session['omitAnswers'] = True  
+    else:
+        if 'omitAnswers' in request.session:
+            del request.session['omitAnswers']    
+
+    if 'omitFigures' in request.POST.keys():
+        request.session['omitFigures'] = True  
+    else:
+        if 'omitFigures' in request.session:
+            del request.session['omitFigures']   
+
+
+    if 'omitMeta' in request.POST.keys():
+        request.session['omitMeta'] = True  
+    else:
+        if 'omitMeta' in request.session:
+            del request.session['omitMeta']             
     
     request.session['fresh_exam'] = True
     
@@ -766,15 +812,40 @@ def makeExam(request):
         eAppendix = request.session['exam_appendix']
     else:
         eAppendix = False   
+        
+    if 'omitInstructions' in request.session:
+        omitInstructions = request.session['omitInstructions']
+    else:
+        omitInstructions = False
+
+    if 'omitAnswers' in request.session:
+        omitAnswers = request.session['omitAnswers']
+    else:
+        omitAnswers = False
+
+    if 'omitFigures' in request.session:
+        omitFigures = request.session['omitFigures']
+    else:
+        omitFigures = False
+
+    if 'omitQuestionSource' in request.session:
+        omitQuestions = request.session['omitQuestionSource']
+    else:
+        omitQuestions = False      
+        
+    if 'omitMeta' in request.session:
+        omitMeta = request.session['omitMeta']
+    else:
+        omitMeta = False         
     
     tempDir = "NOTREAL"
     
     if order == "sections":
-        (filesToAdd, tempDir) = makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix)
+        (filesToAdd, tempDir) = makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix, omitQuestions, omitAnswers, omitInstructions, omitFigures, omitMeta)
         filenames = filenames + filesToAdd
         
     elif order == "together":
-        (filesToAdd, tempDir) = makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix)
+        (filesToAdd, tempDir) = makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix, omitQuestions, omitAnswers, omitInstructions, omitFigures, omitMeta)
         filenames = filenames + filesToAdd
         
 
@@ -826,25 +897,35 @@ def updateQuestionStats(cart):
         updateCachedFiles(qid)    
         
 #Helper
-def makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix):
+def makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix, omitQuestions, omitAnswers, omitInstructions, omitFigures, omitMeta):
     tempDirName = getTempDirName(settings.QUESTIONS_DIRS)
     
     examDir = settings.QUESTIONS_DIRS  + tempDirName + os.sep 
+    
+    out = []
+    
     if not os.path.exists(examDir):
         os.makedirs(examDir)
         
-    instructionsFile = examDir + examName + "instructions.tex" 
-    questionsFile = examDir + examName + "questions.tex"
-    answersFile = examDir + examName + "answers.tex"
+    if not omitInstructions:
+        instructionsFile = examDir + examName + "instructions.tex" 
+        texOpenEnumerate(instructionsFile)
+        out = out + [instructionsFile]
+        
+    if not omitQuestions:
+        questionsFile = examDir + examName + "questions.tex"
+        texOpenEnumerate(questionsFile)
+        out = out + [questionsFile]
+        
+    if not omitAnswers:
+        answersFile = examDir + examName + "answers.tex"
+        texOpenEnumerate(answersFile)
+        out = out + [answersFile]
+    
     mainFile = examDir + examName + "main.tex"
     
-
     
-    texOpenEnumerate(instructionsFile)
-    texOpenEnumerate(questionsFile)
-    texOpenEnumerate(answersFile)
-    
-    out = [mainFile, instructionsFile, answersFile, questionsFile]
+    out = out + [mainFile] 
     
     if eAppendix:
         appendixFile = examDir + examName + "appendix.tex"
@@ -857,59 +938,80 @@ def makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix
         if includeSepFiles:
             metaCacheFileName = getFilePath(qDir, "-meta")
             qSourceCacheFileName = getFilePath(qDir, "-qs") 
-            out = out + [qDir + metaCacheFileName, qDir + qSourceCacheFileName]
-            texInputFile(questionsFile,metaCacheFileName)
-            texItem(questionsFile)
-            texInputFile(questionsFile,qSourceCacheFileName)
+            
+            if not omitQuestions:
+                out = out + [qDir + metaCacheFileName, qDir + qSourceCacheFileName]
+                texInputFile(questionsFile,metaCacheFileName)
+                texItem(questionsFile)
+                texInputFile(questionsFile,qSourceCacheFileName)
             
             fSourceCacheFileName = getFilePath(qDir, "-fs")
-            if eAppendix:
-                texInputFile(appendixFile,fSourceCacheFileName)
-                out = out + [qDir + fSourceCacheFileName]            
-            else:
-                texInputFile(questionsFile,fSourceCacheFileName)
-                out = out + [qDir + fSourceCacheFileName]
+            if not omitFigures:
+                if eAppendix:
+                    texInputFile(appendixFile,fSourceCacheFileName)
+                    out = out + [qDir + fSourceCacheFileName]            
+                else:
+                    if not omitQuestions:
+                        texInputFile(questionsFile,fSourceCacheFileName)
+                        out = out + [qDir + fSourceCacheFileName]
         else:
-            writeQMetaToFile(question, questionsFile, True)
-            texItem(questionsFile)
-            writeQSToFile(question, questionsFile, True)
-            if eAppendix:
-                writeFSToFile(question, appendixFile, True)
-            else:
-                writeFSToFile(question, questionsFile, True)
+            if not omitQuestions:
+                if not omitMeta:
+                    writeQMetaToFile(question, questionsFile, True)
+                texItem(questionsFile)
+                writeQSToFile(question, questionsFile, True)
+                
+            if not omitFigures:
+                if eAppendix:
+                    writeFSToFile(question, appendixFile, True)
+                else:
+                    if not omitQuestions:
+                        writeFSToFile(question, questionsFile, True)
         
         if includeSepFiles:
             aSourceCacheFileName = getFilePath(qDir, "-as")
-            out = out + [qDir + aSourceCacheFileName]
-            texItem(answersFile)
-            texInputFile(answersFile,aSourceCacheFileName)
+            
+            if not omitAnswers:
+                out = out + [qDir + aSourceCacheFileName]
+                texItem(answersFile)
+                texInputFile(answersFile,aSourceCacheFileName)
         else:
-            texItem(answersFile)
-            writeASToFile(question, answersFile, True)
+            if not omitAnswers:
+                texItem(answersFile)
+                writeASToFile(question, answersFile, True)
         
         if includeSepFiles:
             iSourceCacheFileName = getFilePath(qDir, "-is")
-            out = out + [qDir + iSourceCacheFileName]
-            texItem(instructionsFile)
-            texInputFile(instructionsFile,iSourceCacheFileName)        
+            if not omitInstructions:
+                out = out + [qDir + iSourceCacheFileName]
+                texItem(instructionsFile)
+                texInputFile(instructionsFile,iSourceCacheFileName)        
         else:
-            texItem(instructionsFile)
-            writeISToFile(question, instructionsFile, True)
-            
-        out = out + getImageFiles(qid)
+            if not omitInstructions:
+                texItem(instructionsFile)
+                writeISToFile(question, instructionsFile, True)
         
-    texCloseEnumerate(instructionsFile)
-    texCloseEnumerate(questionsFile)
-    texCloseEnumerate(answersFile)
+        if not omitFigures:
+            out = out + getImageFiles(qid)
+        
+    if not omitInstructions:        
+        texCloseEnumerate(instructionsFile)
+    if not omitQuestions:
+        texCloseEnumerate(questionsFile)
+    if not omitAnswers:
+        texCloseEnumerate(answersFile)
     
     texDocHeader(mainFile)
     texText(mainFile,eheader)
-    texSection(mainFile, str("Instructions"))
-    texInputFile(mainFile, str(examName) + "instructions.tex")
-    texSection(mainFile, str("Questions"))
-    texInputFile(mainFile, str(examName) + "questions.tex")
-    texSection(mainFile, str("Answers"))
-    texInputFile(mainFile, str(examName) + "answers.tex")
+    if not omitInstructions:
+        texSection(mainFile, str("Instructions"))
+        texInputFile(mainFile, str(examName) + "instructions.tex")
+    if not omitQuestions:
+        texSection(mainFile, str("Questions"))
+        texInputFile(mainFile, str(examName) + "questions.tex")
+    if not omitAnswers:
+        texSection(mainFile, str("Answers"))
+        texInputFile(mainFile, str(examName) + "answers.tex")
     texText(mainFile,efooter)
     
     if eAppendix:
@@ -1001,7 +1103,7 @@ def getTempDirName(base):
     return out
     
 #Helper  
-def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix):
+def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix, omitQuestions, omitAnswers, omitInstructions, omitFigures, omitMeta):
     
     tempDirName = getTempDirName(settings.QUESTIONS_DIRS)
     
@@ -1024,46 +1126,58 @@ def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendi
         question = Question.objects.get(id=qid)
         qDir = getCacheDir(qid)
         
-        texSection(mainFile, str("Question ") + str(qid) )
+        if not omitQuestions:
+            texSection(mainFile, str("Question ") + str(qid) )
 
         
         if includeSepFiles:
             metaCacheFileName = getFilePath(qDir, "-meta")
             qSourceCacheFileName = getFilePath(qDir, "-qs") 
-            out = out + [qDir + metaCacheFileName, qDir + qSourceCacheFileName]
-            texInputFile(mainFile,metaCacheFileName)
-            texInputFile(mainFile,qSourceCacheFileName)
+            if not omitQuestions:
+                out = out + [qDir + metaCacheFileName, qDir + qSourceCacheFileName]
+                if not omitMeta:
+                    texInputFile(mainFile,metaCacheFileName)
+                texInputFile(mainFile,qSourceCacheFileName)
             
             fSourceCacheFileName = getFilePath(qDir, "-fs")
-            if eAppendix:
-                texInputFile(appendixFile,fSourceCacheFileName)
-                out = out + [qDir + fSourceCacheFileName]            
-            else:
-                texInputFile(mainFile,fSourceCacheFileName)
-                out = out + [qDir + fSourceCacheFileName]
-        else:
-            writeQMetaToFile(question, mainFile, True)
-            writeQSToFile(question, mainFile, True)
-            if eAppendix:
-                writeFSToFile(question, appendixFile, True)
-            else:
-                writeFSToFile(question, mainFile, True)
-        
-        if includeSepFiles:
-            aSourceCacheFileName = getFilePath(qDir, "-as")
-            out = out + [qDir + aSourceCacheFileName]
-            texInputFile(mainFile,aSourceCacheFileName)
-        else:
-            writeASToFile(question, mainFile, True)
-        
-        if includeSepFiles:
-            iSourceCacheFileName = getFilePath(qDir, "-is")
-            out = out + [qDir + iSourceCacheFileName]
-            texInputFile(mainFile,iSourceCacheFileName)        
-        else:
-            writeISToFile(question, mainFile, True)
             
-        out = out + getImageFiles(qid)
+            if not omitFigures:
+                if eAppendix:
+                    texInputFile(appendixFile,fSourceCacheFileName)
+                    out = out + [qDir + fSourceCacheFileName]            
+                else:
+                    texInputFile(mainFile,fSourceCacheFileName)
+                    out = out + [qDir + fSourceCacheFileName]
+        else:
+            if not omitMeta:
+                writeQMetaToFile(question, mainFile, True)
+            if not omitQuestions:
+                writeQSToFile(question, mainFile, True)
+                
+            if not omitFigures:
+                if eAppendix:
+                    writeFSToFile(question, appendixFile, True)
+                else:
+                    writeFSToFile(question, mainFile, True)
+        
+        if not omitAnswers:
+            if includeSepFiles:
+                aSourceCacheFileName = getFilePath(qDir, "-as")
+                out = out + [qDir + aSourceCacheFileName]
+                texInputFile(mainFile,aSourceCacheFileName)
+            else:
+                writeASToFile(question, mainFile, True)
+        
+        if not omitInstructions:
+            if includeSepFiles:
+                iSourceCacheFileName = getFilePath(qDir, "-is")
+                out = out + [qDir + iSourceCacheFileName]
+                texInputFile(mainFile,iSourceCacheFileName)        
+            else:
+                writeISToFile(question, mainFile, True)
+        
+        if not omitFigures:
+            out = out + getImageFiles(qid)
         
     
 
