@@ -1,0 +1,17 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+
+<h1> {{ tag }} </h1>
+
+ <form action="{% url 'tag.rename' tag.id %}" method="POST">{% csrf_token %}
+Exam name: <input type="text" name="newTagName"><br>
+        <input type="submit" value="Rename Tag">
+    </form>
+ <br>
+<br>
+{% if user.is_superuser %}
+
+<a href="{% url 'tag.del' tag.id %}">Delete Tag</a>
+{% endif %}
+{% endblock %}

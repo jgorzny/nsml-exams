@@ -21,5 +21,10 @@ urlpatterns = [
     url(r'^cart/generate/$', views.generateOptions, name='questions.cart.generate'),
     url(r'^(?P<question_id>[0-9]+)/edit/fig/(?P<figure_num>[0-9]+)/$', views.downloadFigure, name='questions.edit.downloadFigure'),
     url(r'^cart/generate/make/$', views.makeExam, name='questions.cart.make'),
-    url(r'^searchresults_json/$', views.ajax, name='questions.search.json'),    
+    url(r'^searchresults_json/$', views.ajax, name='questions.search.json'), 
+    url(r'^tags/(?P<tag_id>[0-9]+)/$', views.tagDetail, name='tag.detail'),    
+    url(r'^tags/$', views.tagList, name='tag.list'),  
+    url(r'^tags/(?P<tag_id>[0-9]+)/edit/$', views.tagRename, name='tag.rename'),    
+    url(r'^tags/(?P<tag_id>[0-9]+)/del/$', views.tagDelete, name='tag.del'),       
+
 ]

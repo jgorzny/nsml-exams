@@ -709,6 +709,42 @@ def downloadFigure(request, figure_num, question_id):
 
     return resp
     
+@login_required
+def tagList(request):
+    alltags = Tag.objects.all()
+    context = {'tag_list': alltags }
+    return render(request, 'questions/taglist.html', context)
+    
+@login_required
+def tagDetail(request, tag_id):
+    tag = Tag.objects.get(id=tag_id)
+    return render(request, 'questions/tagdetail.html', {'tag': tag})    
+
+@login_required
+def tagRename(request, tag_id):
+    tag = Tag.objects.get(id=tag_id)
+    if 'newTagName' in request.POST:
+        newName = request.POST['newTagName']
+        if len(newName) > 0:
+            conflicts = Tag.objects.filter(name=newName)
+            if conflicts.count() > 0:
+                return render(request, 'questions/tagfail.html')   
+            else:
+                tag.name = newName
+                tag.save()
+                return render(request, 'questions/tagrenamed.html')    
+        else:
+            return render(request, 'questions/tagfail.html')   
+    else:
+        return render(request, 'questions/tagfail.html')   
+        
+    
+
+@login_required
+def tagDelete(request, tag_id):
+    tag = Tag.objects.get(id=tag_id)
+    tag.delete()
+    return render(request, 'questions/tagdeleted.html', {'tag': tag})    
     
 @login_required
 def store(request, question_id):

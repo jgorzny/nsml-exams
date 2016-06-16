@@ -16,6 +16,12 @@
 <p><a href="{% url 'admin:index' %}">Admin</a> </p>
 {% endif %}
 </div>
+<div>
+{% if user.is_superuser %}
+
+<p><a href="{% url 'tag.list' %}">List Tags</a> </p>
+{% endif %}
+</div>
 <br>
 
 {% endblock %}
