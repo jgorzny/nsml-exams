@@ -561,32 +561,83 @@ def search(request):
 
 @login_required
 def searchresults(request):
+    #if 'tags' in request.GET:
     if 'tags' in request.GET:
         searchedtags = request.GET['tags']
-        foundquestions = TaggedItem.objects.get_by_model(Question, searchedtags)
-        
-        context = {'taglist': searchedtags, 'questions':foundquestions}
-        
-        if "exam_cart" in request.session:
-            print("There are questions in the list - search")
-            examList = request.session["exam_cart"]
-            cart_question_list = Question.objects.filter(id__in=examList)
-            context.update({'cart_question_list': cart_question_list})
+        print "tags??", searchedtags, len(searchedtags)
+        if len(searchedtags) > 0:
+            foundquestions = TaggedItem.objects.get_by_model(Question, searchedtags)
             
-            #filterResultsFlag = request.GET['filterResults']
-            #print filterResultsFlag, "is the flag"
-            #if filterResultsFlag == "off":
-            if 'filterResults' not in request.GET:
-                foundquestionsFiltered = foundquestions.exclude(id__in=examList)
-                context['questions']=foundquestionsFiltered
-            
-            print cart_question_list
+            if ',' in searchedtags:
+                tagNamesClean = searchedtags[:-2]
+            else:
+                tagNamesClean = searchedtags
         else:
-            print("The cart is empty")
-        
-        return render(request, 'questions/searchresults.html', context)
+            foundquestions = Question.objects.all()
+            tagNamesClean = "No tags"
+    
+
+    
+    difficulties = ""
+    
+    context = {'taglist': tagNamesClean, 'questions':foundquestions}
+    
+    if 'searchVEasyQuestions' not in request.GET:
+        foundquestions = foundquestions.exclude(difficulty=0)
     else:
-        return HttpResponse('Please submit a search term.')
+        difficulties = difficulties + "Easy, "
+        
+    if 'searchEasyQuestions' not in request.GET:
+        foundquestions = foundquestions.exclude(difficulty=1)
+    else:
+        difficulties = difficulties + "Very Easy, "
+        
+    if 'searchMedQuestions' not in request.GET:
+        foundquestions = foundquestions.exclude(difficulty=2)
+    else:
+        difficulties = difficulties + "Medium, "
+
+    if 'searchHardQuestions' not in request.GET:
+        foundquestions = foundquestions.exclude(difficulty=3)
+    else:
+        difficulties = difficulties + "Hard, "
+
+    if 'searchVHardQuestions' not in request.GET:
+        foundquestions = foundquestions.exclude(difficulty=4)
+    else:
+        difficulties = difficulties + "Very Hard, "
+
+    if len(difficulties) > 0:
+        difficulties = difficulties[:-2]
+    context.update({'diffs': difficulties})
+    
+    if 'searchText' in request.GET:
+        sText = request.GET['searchText']
+        if len(sText) > 0:
+            foundquestions = foundquestions.filter(question_description__contains=sText)
+            context.update({'searchedText': sText})
+
+    
+    if "exam_cart" in request.session:
+        print("There are questions in the list - search")
+        examList = request.session["exam_cart"]
+        cart_question_list = Question.objects.filter(id__in=examList)
+        context.update({'cart_question_list': cart_question_list})
+        
+        #filterResultsFlag = request.GET['filterResults']
+        #print filterResultsFlag, "is the flag"
+        #if filterResultsFlag == "off":
+        if 'filterResults' not in request.GET:
+            foundquestionsFiltered = foundquestions.exclude(id__in=examList)
+            context['questions']=foundquestionsFiltered
+        
+        print cart_question_list
+    else:
+        print("The cart is empty")
+    
+    return render(request, 'questions/searchresults.html', context)
+    #else:
+    #    return HttpResponse('Please submit a search term.')
 
 @login_required
 def ajax(request):

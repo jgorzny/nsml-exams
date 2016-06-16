@@ -10,6 +10,8 @@ from tagging_autocomplete.widgets import TagAutocomplete
 from tagging.models import Tag
 from tagging.registry import register
 from django import forms
+from NSMLEB.fulltext import SearchManager
+
 
 import os
 
@@ -17,6 +19,8 @@ import os
 
 # Create your models here.
 class Question(models.Model):
+    objects    = SearchManager(['question_description'])
+
     question_text = models.TextField(max_length=2000,default='Question source')
     pub_date = models.DateTimeField('date published')
     question_description = models.TextField(max_length=200,default='Description - web/comments only')
@@ -30,12 +34,35 @@ class Question(models.Model):
     tags = TagAutocompleteField()
     last_used = models.DateTimeField('date last used',default=datetime.now)
     num_used = models.PositiveIntegerField(default=0)
+    
+    VEASY = '0'
+    EASY = '1'
+    MEDIUM = '2'
+    HARD = '3'
+    VHARD = '4'
+    QUESTION_DIFFICULTIES = (
+        (VEASY, 'Very Easy'),
+        (EASY, 'Easy'),
+        (MEDIUM, 'Medium'),
+        (HARD, 'Hard'),
+        (VHARD, 'Very Hard'),
+    )
+    difficulty = models.CharField(max_length=1,
+                                      choices=QUESTION_DIFFICULTIES ,
+                                      default=VEASY)    
 
     def __unicode__(self):
         return u'%s %s' % ("Question",self.pk)
     
     def get_tags(self):
         return Tag.objects.get_for_object(self) 
+        
+    def get_tags_clean(self):
+        tags = Tag.objects.get_for_object(self)
+        out = ""
+        for t in tags:
+            out = out + str(t) + ", "
+        return out[:-2]
         
     def get_figures(self):
         return Images.objects.filter(question=self.pk)
@@ -68,6 +95,18 @@ class Question(models.Model):
     def get_new_figure_num(self):
         figureSet = Images.objects.filter(question=self.pk)
         return figureSet.count() + 1
+        
+    def get_difficulty_name(self):
+        if self.difficulty == 0:
+            return "Very Easy"
+        elif self.difficulty == 1:
+            return "Easy"
+        elif self.difficulty == 1:
+            return "Medium"
+        elif self.difficulty == 1:
+            return "Hard"
+        else:
+            return "Very Hard"
         
     #TODO: generates broken HTML (first \item generates a </li> that closes nothing)
     def getHTMLQuestionSource(self):
@@ -110,6 +149,7 @@ class Images(models.Model):
     def get_fig_name_short(self):
         return self.short_name
         
+        
 class Tables(models.Model):
     question = models.ForeignKey(Question, default=None)
     table = models.TextField(max_length=2000,default='Table source') 
@@ -121,11 +161,16 @@ class Tables(models.Model):
 class QuestionForm(ModelForm):
     class Meta:
         model = Question
-        fields = ['question_text','question_description','question_instructions','question_notes','answer_text', 'tags']
+        fields = ['question_text','question_description','question_instructions','question_notes','answer_text', 'tags', 'difficulty']
 
 class QuestionSearch(ModelForm):
     filterResults = forms.BooleanField(required=False, label="Include questions already in your exam", initial=False)
-
+    searchVEasyQuestions = forms.BooleanField(required=False, label="Search Very Easy Questions", initial=False)    
+    searchEasyQuestions = forms.BooleanField(required=False, label="Search Easy Questions", initial=False)
+    searchMedQuestions = forms.BooleanField(required=False, label="Search Medium Questions", initial=False)
+    searchHardQuestions = forms.BooleanField(required=False, label="Search Hard Questions", initial=False)
+    searchVHardQuestions = forms.BooleanField(required=False, label="Search Very Hard Questions", initial=False)
+    searchText = forms.CharField(widget=forms.Textarea, label="Description search text:")
     class Meta:
         model = Question
         fields=['tags']

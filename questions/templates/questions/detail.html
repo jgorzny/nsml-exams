@@ -4,13 +4,16 @@
 
 <h1> {% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %} </h1>
 <ul>
+	<li> Difficulty: {{ question.get_difficulty_name}} </li>
+
 	<li> Published on: {{ question.pub_date}} </li>
     <li> Description: {{ question.question_description}} </li>
     <li> Instructions: {{ question.question_instructions }}</li>
 <li> Answer: {% autoescape off %}{{ question.getHTMLAnswerSource}}{% endautoescape  %}</li>
 
     <li> Notes: {{ question.question_notes}}</li>
-    <li> Tags: {{ question.get_tags}}</li>
+    <li> Tags: {{ question.get_tags_clean}}</li>
+    
     
     <li> Figure Files: {{ question.get_figure_names }}</li>
     <li> Figure Files: {{ question.get_figure_names_short }}</li>
