@@ -606,6 +606,13 @@ def searchresults(request):
         foundquestions = foundquestions.exclude(difficulty=4)
     else:
         difficulties = difficulties + "Very Hard, "
+        
+    if 'maxUses' in request.GET:
+        if not request.GET['maxUses']:
+            print "No max." #Does nothing
+        else:
+            maxUses = request.GET['maxUses']
+            foundquestions.filter(question_description__lte=maxUses)
 
     if len(difficulties) > 0:
         difficulties = difficulties[:-2]

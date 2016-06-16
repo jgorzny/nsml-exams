@@ -165,11 +165,15 @@ class QuestionForm(ModelForm):
 
 class QuestionSearch(ModelForm):
     filterResults = forms.BooleanField(required=False, label="Include questions already in your exam", initial=False)
+    
     searchVEasyQuestions = forms.BooleanField(required=False, label="Search Very Easy Questions", initial=False)    
     searchEasyQuestions = forms.BooleanField(required=False, label="Search Easy Questions", initial=False)
     searchMedQuestions = forms.BooleanField(required=False, label="Search Medium Questions", initial=False)
     searchHardQuestions = forms.BooleanField(required=False, label="Search Hard Questions", initial=False)
     searchVHardQuestions = forms.BooleanField(required=False, label="Search Very Hard Questions", initial=False)
+    
+    maxUses = forms.IntegerField(required=False, label="Questions used at most _ times", min_value=0)
+
     searchText = forms.CharField(widget=forms.Textarea, label="Description search text:")
     class Meta:
         model = Question
