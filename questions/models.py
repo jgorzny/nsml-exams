@@ -51,6 +51,10 @@ class Question(models.Model):
                                       choices=QUESTION_DIFFICULTIES ,
                                       default=VEASY)    
 
+    def get_pk(self):
+        print ("getting",self.id)
+        return u'%s' % (self.pk)
+                                      
     def __unicode__(self):
         return u'%s %s' % ("Question",self.pk)
     

@@ -552,7 +552,13 @@ def deleteAllQuestionsAndClean():
 
 @login_required	
 def generateCartOptions(request):
-    return render(request, 'questions/cartoptions.html')        
+    context = {}
+    if "exam_cart" in request.session:
+        print("There are questions in the list - search")
+        examList = request.session["exam_cart"]
+        cart_question_list = Question.objects.filter(id__in=examList)
+        context.update({'cart_question_list': cart_question_list})
+    return render(request, 'questions/cartoptions.html', context)        
         
 @login_required	
 def search(request):
@@ -803,6 +809,13 @@ def generateOptions(request):
     
     request.session['exam_order'] = order
     
+    if 'question_order' in request.POST.keys():
+        #print("order found", request.POST['question_order'])
+        questionOrderString = request.POST['question_order']
+        orderedQuestionList = processOrderingString(questionOrderString)
+        #print("OQL:",orderedQuestionList)
+        request.session["exam_cart"] = orderedQuestionList
+    
     if 'images_in_folder' in request.POST.keys():
         request.session['exam_images'] = True 
     else:
@@ -950,6 +963,8 @@ def makeExam(request):
     # E.g [thearchive.zip]/somefiles/file2.txt
    
     zip_subdir = examName
+    if len(zip_subdir) == 0:
+        zip_subdir = "generated-exam"
     zip_filename = "%s.zip" % zip_subdir
 
     # Open StringIO to grab in-memory ZIP contents
@@ -1285,3 +1300,23 @@ def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendi
     texDocClose(mainFile)
     return (out, examDir)
         
+#Helper, not intended to be called directly        
+def processOrderingString(orderString):
+    print("OS:",orderString)
+    if "," not in str(orderString):
+        #User did not modify order.
+        #example string: question[]=146&question[]=144
+        questionList = orderString.split('&')
+        questionList = [getQNum(s) for s in questionList]
+        print("returning",questionList)
+        return questionList
+    else:
+        #User moved (and therefore updated the string)
+        lastCommaRemoved = orderString[:-1]
+        questionList = lastCommaRemoved.split(',')
+        questionList = [int(i) for i in questionList] #make them all ints
+        print("returning",questionList)        
+        return questionList    
+        
+def getQNum(s):
+    return int(s[11:])
