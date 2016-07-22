@@ -20,6 +20,7 @@ from django.conf import settings
 from wsgiref.util import FileWrapper
 
 from tagging.models import Tag, TaggedItem
+from tagging.utils import parse_tag_input
 
 import json
 import socket
@@ -563,24 +564,114 @@ def generateCartOptions(request):
 @login_required	
 def search(request):
     form = QuestionSearch()
-    return render(request, 'questions/search.html', {'form': form})
+    tenTags = getTopTenTags()
+    print("tt:",tenTags)
+    return render(request, 'questions/search.html', {'form': form, 'tags': tenTags})
 
+#Helper
+def getTopTenTags():
+    tags = Tag.objects.usage_for_model(Question, counts=True)
+    tagCounts = [(tag.name, tag.count) for tag in tags]
+    tagCounts.sort(key=lambda tup: tup[1])
+    if len(tagCounts) > 10:
+        topTenPairs = tagCounts[-10]
+    else:
+        topTenPairs = tagCounts
+    topTen = [x[0] for x in topTenPairs]
+    print("topten:",topTen)
+    return topTen
+    
+#Helper
+def checkAdditionalTags(list, request):
+    moreTags = []
+    newList = list[:-1].split(",")
+    print("keys,",newList,request.GET.keys())
+    for t in newList:
+        if t in request.GET.keys():
+            moreTags.append(str(t))
+    return moreTags
+      
+#Helper
+def getAdditionalTags(list):
+    moreTags = []
+    newList = list.split(",")
+    for t in newList:
+        moreTags.append(Tag.objects.get(name=str(t).strip()))
+    return moreTags  
+
+#Helper
+def getAdditionalTagsString(list, request):
+    moreTags = ""
+    newList = list.split(",")
+    print("keys,",newList,request.GET.keys())
+    for t in newList:
+        if t in request.GET.keys() and len(str(t)) > 0:
+            moreTags = moreTags + ", " + str(t)
+    return moreTags[2:]#fml   
+
+#Helper    
+def getUniqueTags(additionalTagList, searchedTags):
+    #split, remove empty entries
+    newSearchedListWithSpaces = searchedTags.split(",")
+    newSearchedList = filter(None,[x.strip() for x in newSearchedListWithSpaces]) 
+    #print newSearchedList,"NSL",[x.strip() for x in newSearchedListWithSpaces]
+    
+    allTags = additionalTagList + newSearchedList
+    allTags = list(set(allTags))
+    allTags = ", ".join(allTags)
+    return allTags
+    
 @login_required
 def searchresults(request):
     #if 'tags' in request.GET:
     if 'tags' in request.GET:
         searchedtags = request.GET['tags']
-        print "tags??", searchedtags, len(searchedtags)
+        #print "tags??", searchedtags, len(searchedtags)
+        
+        if 'suggestedtags' in request.GET:
+            additionalTagsList = request.GET['suggestedtags']
+            #print("atp:",additionalTagsList)
+            additionalTags = checkAdditionalTags(additionalTagsList, request)
+            #print("at:",additionalTags)
+        
         if len(searchedtags) > 0:
-            foundquestions = TaggedItem.objects.get_by_model(Question, searchedtags)
+            foundquestions = TaggedItem.objects.get_union_by_model(Question, searchedtags)
+            
             
             if ',' in searchedtags:
                 tagNamesClean = searchedtags[:-2]
             else:
                 tagNamesClean = searchedtags
+            
+            if additionalTags:
+                addTagString = getAdditionalTagsString(additionalTagsList, request)
+                addTags = getAdditionalTags(addTagString)
+                addTagList = [str(y.name) for y in addTags]
+                moreQuestions = TaggedItem.objects.get_union_by_model(Question, addTagList)
+                
+                foundquestions = foundquestions | moreQuestions
+                #print addTagList,"this one"
+
+                tagNamesClean = getUniqueTags(addTagList, searchedtags)
+            
+            
         else:
             foundquestions = Question.objects.all()
-            tagNamesClean = "No tags"
+            
+            if additionalTags:
+                addTagString = getAdditionalTagsString(additionalTagsList, request)
+                addTags = getAdditionalTags(addTagString)
+                #print addTags
+                addTagList = [str(y.name) for y in addTags]
+                moreQuestions = TaggedItem.objects.get_union_by_model(Question, addTagList)
+                                
+                #print"mq",  moreQuestions            
+                foundquestions = moreQuestions
+                
+            if additionalTags:
+                tagNamesClean = addTagString
+            else:
+                tagNamesClean = "No tags"
     
 
     

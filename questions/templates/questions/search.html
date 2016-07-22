@@ -5,7 +5,14 @@
 <h1>Search</h1>
     <form action="/questions/search_results/" method="GET">{% csrf_token %}
         {{ form.as_p }}
+        {% if tags %}
+        Top 10 Tags:<br>
+         <input type="hidden" id="suggestedtags" name="suggestedtags" value="{% for t in tags %}{{ t }},{% endfor %}" />
 
+        {% for t in tags %}
+        <input type="checkbox" name="{{ t }}" value="{{ t }}"/>{{ t }} <br>
+        {% endfor %}
+        {% endif %}
         <input type="submit" value="Search">
     </form>
 {% endblock %}
