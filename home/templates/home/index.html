@@ -8,11 +8,16 @@
 <p><a href="{% url 'add' %}">Add Question</a> </p>
 <br>
 <div>
-<p><a href="{% url 'questions.search' %}">Search</a></p>
+<p><a href="{% url 'questions.search' %}">Search Questions</a></p>
+</div>
+<br>
+<div>
+<p><a href="{% url 'exams.recentExams' %}">View Exams</a></p>
+<p><a href="{% url 'exams.search' %}">Search Exams</a></p>
 </div>
 <div>
 {% if user.is_superuser %}
-
+<br>
 <p><a href="{% url 'admin:index' %}">Admin</a> </p>
 {% endif %}
 </div>

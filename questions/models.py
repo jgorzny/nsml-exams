@@ -16,8 +16,6 @@ from NSMLEB.fulltext import SearchManager
 import os
 
 
-
-# Create your models here.
 class Question(models.Model):
     objects    = SearchManager(['question_description'])
 
@@ -162,7 +160,19 @@ class Tables(models.Model):
     
     def __unicode__(self):
         return u'%s %s' % ("Table",self.pk)     
-    
+
+class Exam(models.Model):
+    exam_name = models.TextField(max_length=200,default='Exam name')
+    pub_date = models.DateTimeField('date published')
+    exam_description = models.TextField(max_length=200,default='Description - web/comments only')
+    last_edited = models.DateTimeField('date last edited',default=datetime.now)
+    num_edits = models.PositiveIntegerField(default=0)
+    exam_author = models.CharField(max_length=200,default='None yet')
+    contributing_authors = models.CharField(max_length=200,default='None yet')
+    tags = TagAutocompleteField()
+    is_public = models.BooleanField(default=False)
+    questions = models.CommaSeparatedIntegerField(max_length=200)
+   
 class QuestionForm(ModelForm):
     class Meta:
         model = Question

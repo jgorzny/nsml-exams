@@ -20,6 +20,7 @@ urlpatterns = [
     url(r'^questions/', include('questions.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^', include('home.urls')),
+    url(r'^exams/', include('exams.urls')),    
 	url(r'^accounts/', include('accounts.urls', namespace='accounts')),
     url(r'^tagging_autocomplete/', include('tagging_autocomplete.urls')),    
 ]

@@ -1,0 +1,21 @@
+{% extends 'home/base.html' %}
+
+
+{% block content %}
+
+{% if latest_exam_list %}
+    <ul>
+    {% for exam in latest_exam_list %}
+		<li>There should be a link to an exam here.</li>    {% endfor %}
+    </ul>
+{% else %}
+    <p>No exams are available.</p>
+{% endif %}
+
+{% if user.is_superuser %}
+Dump all exams? Can't be undone.
+<br>
+<a href="{% url 'exams.deleteAll' %}">Delete All Exams</a>
+{% endif %}
+{% endblock %}
+
