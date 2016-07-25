@@ -2,6 +2,9 @@
 
 
 {% block content %}
+{% if isEdit and not user.username == question.initial_author and not user.is_superuser %}
+You don't have permission for this.
+{% else %}
     <h1>Question</h1>
     <form enctype="multipart/form-data" method="POST" class="post-form" >{% csrf_token %}
         {{ form.as_p }}
@@ -103,13 +106,13 @@ $("#resetInputForFigureSource{{ fig.num }}").click({fileFieldName: "#id_figureso
         <br>
 
          {% if isEdit %}
-         {% if user.is_superuser %}
+         {% if user.is_superuser or question.initial_author == user.username %}
 
 <a href="{% url 'questions.deleteQuestion' form.instance.pk %}">Delete Question</a>
 {% endif %}
 {% endif %}
     </form>
     
-
+{% endif %}
     
 {% endblock %}

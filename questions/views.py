@@ -51,10 +51,19 @@ def getCacheDir(qid):
     
 def getImageDir(qid):
     return settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep   
-    
+   
+#Helper
+def getQuestions(request):
+    publicQuestions = Question.objects.filter(is_public=True) 
+    ownedQuestions = Question.objects.filter(initial_author=request.user.username) 
+    allQuestions = ownedQuestions | publicQuestions
+    return allQuestions
+   
 @login_required
 def index(request):
-    latest_question_list = Question.objects.order_by('-pub_date')[:5]
+    #latest_question_list = Question.objects.order_by('pub_date')[:5]
+    allQuestions = getQuestions(request)
+    latest_question_list = allQuestions.order_by('pub_date')[:5]
     context = {'latest_question_list': latest_question_list}
     return render(request, 'questions/index.html', context)
 	
@@ -288,7 +297,11 @@ def add(request):
             print "keys",request.FILES.keys()
             
             question = form.save(commit=False)
+            print "qd:",question.difficulty
             question.pub_date = timezone.now()
+            
+            question.initial_author = request.user.username
+            
             question.save()
 
             questionid = question.pk
@@ -335,6 +348,22 @@ def edit(request, question_id):
         form = QuestionForm(instance=question)
     return render(request, 'questions/add.html', {'form': form, 'isEdit': True})	
 
+@login_required	
+def copyQuestion(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    question.pk = None #make new pk automatically
+    question.save() #make the copy
+    if question.contributing_authors == 'None yet':
+        question.contributing_authors =  question.initial_author
+    else:
+        question.contributing_authors =  question.contributing_authors + ", " + question.initial_author
+    question.initial_author = request.user.username
+    question.question_text = "Copy: " + question.question_text 
+    question.save()
+    
+    return redirect('detail', question.pk)
+    
+    
 #Helper - not called by URL  
 def getDynamicFormElements(request, questionid, question, editMode):
     print "Updating dynamic elements..."
@@ -607,7 +636,7 @@ def getAdditionalTagsString(list, request):
     for t in newList:
         if t in request.GET.keys() and len(str(t)) > 0:
             moreTags = moreTags + ", " + str(t)
-    return moreTags[2:]#fml   
+    return moreTags[2:]   
 
 #Helper    
 def getUniqueTags(additionalTagList, searchedTags):
@@ -633,9 +662,12 @@ def searchresults(request):
             #print("atp:",additionalTagsList)
             additionalTags = checkAdditionalTags(additionalTagsList, request)
             #print("at:",additionalTags)
+        else:
+            additionalTags = None
         
         if len(searchedtags) > 0:
             foundquestions = TaggedItem.objects.get_union_by_model(Question, searchedtags)
+            
             
             
             if ',' in searchedtags:
@@ -678,10 +710,13 @@ def searchresults(request):
     difficulties = ""
     
     context = {'taglist': tagNamesClean, 'questions':foundquestions}
+
+    foundquestions = foundquestions.filter(initial_author=request.user.username) | foundquestions.filter(is_public=True)
     
     if 'searchVEasyQuestions' not in request.GET:
         foundquestions = foundquestions.exclude(difficulty=0)
     else:
+        print "easy?",request.GET['searchVEasyQuestions']
         difficulties = difficulties + "Easy, "
         
     if 'searchEasyQuestions' not in request.GET:
@@ -695,7 +730,7 @@ def searchresults(request):
         difficulties = difficulties + "Medium, "
 
     if 'searchHardQuestions' not in request.GET:
-        foundquestions = foundquestions.exclude(difficulty=3)
+        foundquestions = foundquestions.exclude(difficulty='3')
     else:
         difficulties = difficulties + "Hard, "
 
@@ -703,7 +738,7 @@ def searchresults(request):
         foundquestions = foundquestions.exclude(difficulty=4)
     else:
         difficulties = difficulties + "Very Hard, "
-        
+                
     if 'maxUses' in request.GET:
         if not request.GET['maxUses']:
             print "No max." #Does nothing
@@ -720,7 +755,6 @@ def searchresults(request):
         if len(sText) > 0:
             foundquestions = foundquestions.filter(question_description__contains=sText)
             context.update({'searchedText': sText})
-
     
     if "exam_cart" in request.session:
         print("There are questions in the list - search")
@@ -733,12 +767,14 @@ def searchresults(request):
         #if filterResultsFlag == "off":
         if 'filterResults' not in request.GET:
             foundquestionsFiltered = foundquestions.exclude(id__in=examList)
+            print "fqf", foundquestionsFiltered
             context['questions']=foundquestionsFiltered
         
         print cart_question_list
     else:
         print("The cart is empty")
-    
+    context['questions'] = foundquestions  
+
     return render(request, 'questions/searchresults.html', context)
     #else:
     #    return HttpResponse('Please submit a search term.')
@@ -867,8 +903,8 @@ def removeFromCart(request, question_id):
 def removeFromCartHelper(request, question_id):
     if "exam_cart" in request.session:
             cart = request.session["exam_cart"]
-            if question_id in cart:
-                cart = remove_values_from_list(cart, question_id)
+            if int(question_id) in cart:
+                cart = remove_values_from_list(cart, int(question_id))
                 request.session["exam_cart"] = cart
                 print("Question was removed - ",cart)
             if len(cart) == 0: 

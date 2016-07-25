@@ -34,6 +34,7 @@ class Question(models.Model):
     tags = TagAutocompleteField()
     last_used = models.DateTimeField('date last used',default=datetime.now)
     num_used = models.PositiveIntegerField(default=0)
+    is_public = models.BooleanField(default=False)
     
     VEASY = '0'
     EASY = '1'
@@ -101,13 +102,13 @@ class Question(models.Model):
         return figureSet.count() + 1
         
     def get_difficulty_name(self):
-        if self.difficulty == 0:
+        if self.difficulty == '0':
             return "Very Easy"
-        elif self.difficulty == 1:
+        elif self.difficulty == '1':
             return "Easy"
-        elif self.difficulty == 1:
+        elif self.difficulty == '2':
             return "Medium"
-        elif self.difficulty == 1:
+        elif self.difficulty == '3':
             return "Hard"
         else:
             return "Very Hard"
@@ -165,7 +166,7 @@ class Tables(models.Model):
 class QuestionForm(ModelForm):
     class Meta:
         model = Question
-        fields = ['question_text','question_description','question_instructions','question_notes','answer_text', 'tags', 'difficulty']
+        fields = ['question_text','question_description','question_instructions','question_notes','answer_text', 'tags', 'difficulty', 'is_public']
 
 class QuestionSearch(ModelForm):
     filterResults = forms.BooleanField(required=False, label="Include questions already in your exam", initial=False)
