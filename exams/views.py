@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from django.utils import timezone
 
 
 import questions.models
@@ -10,7 +11,7 @@ import zipfile
 import StringIO
 import os
 
-from questions.views import makeSectionExam, makeTogetherExam, removeDir
+from questions.views import makeSectionExam, makeTogetherExam, removeDir, processOrderingString
 
 #Helper
 def getExams(request):
@@ -33,13 +34,16 @@ def viewExam(request, exam_id):
     exam = get_object_or_404(questions.models.Exam, pk=exam_id)
     print "view Exam request",exam.questions
     
-    examQuestions = getExamQuestions(exam.questions[1:-1])
+    examQuestions = getExamQuestions(exam.questions[1:-1], True)
     return render(request, 'exams/detail.html', {'exam': exam, 'questions': examQuestions}) 
 
 #Helper
-def getExamQuestions(cart):
+def getExamQuestions(cart, split):
     out = []
-    list = cart.split(",")
+    if split:
+        list = cart.split(",")
+    else:
+        list = cart
     for qid in list:
         question = questions.models.Question.objects.get(id=qid)
         out.append(question)
@@ -70,8 +74,11 @@ def deleteExam(request, exam_id):
 @login_required
 def editExam(request, exam_id):
     exam = get_object_or_404(questions.models.Exam, pk=exam_id)
-    examQuestionList = getExamQuestions(exam.questions[1:-1])
-    return render(request, 'exams/editexam.html', {'exam': exam, 'exam_question_list': examQuestionList})
+    examQuestionList = getExamQuestions(exam.questions[1:-1], True)
+    cartList = request.session["exam_cart"]
+    examQuestionListInts=makeIntList(exam.questions[1:-1])
+    cart_question_list = questions.models.Question.objects.filter(id__in=cartList).exclude(id__in=examQuestionListInts) #don't show things already in this exam
+    return render(request, 'exams/editexam.html', {'exam': exam, 'exam_question_list': examQuestionList, 'cart_question_list':cart_question_list})
 
 @login_required
 def downloadExam(request, exam_id): 
@@ -150,8 +157,85 @@ def downloadExam(request, exam_id):
     
 #TODO: these    
 @login_required
-def updateExam(request, exam_id):    
-    return render(request, 'exams/search.html')    
+def updateExam(request, exam_id): 
+    examName = request.POST['examName']
+    
+    if len(examName) == 0:
+        examName = "New Exam-" + request.user.username + "-" + str(timezone.now())
+    
+    examName = examName.replace(':','-')
+    
+    examInstance = get_object_or_404(questions.models.Exam, pk=exam_id)
+    examInstance.pub_date=timezone.now()
+    examInstance.exam_author=request.user.username  
+    
+    headerText = request.POST['header_textarea']
+    footerText = request.POST['footer_textarea']
+    
+    examInstance.header = headerText
+    examInstance.footer = footerText
+    
+    examInstance.exam_description = request.POST['description_textarea']
+    if 'shareExam' in request.POST.keys():
+        examInstance.is_public = True  
+    
+    request.last_edited = timezone.now()
+    request.num_edits = 0
+    
+
+    
+    order = request.POST['questionlayout']
+    
+    if order == "sections":
+        examInstance.layout = '0'
+    else:
+        examInstance.layout = '1'
+    
+    if 'question_order' in request.POST.keys():
+        questionOrderString = request.POST['question_order']
+        orderedQuestionList = processOrderingString(questionOrderString)
+        examInstance.questions = orderedQuestionList
+    else:
+        examInstance.questions = examInstance.questions #Do nothing; should never get here.
+    
+    if 'images_in_folder' in request.POST.keys():
+        examInstance.imagesInFolder = True
+        
+    if 'figures_in_appendix' in request.POST.keys():
+        examInstance.figuresInAppendix = True
+       
+
+    if 'omitPackages' in request.POST.keys():
+        examInstance.omitPackages = True
+       
+        
+    if 'inputFiles' in request.POST.keys():
+        examInstance.inputFiles = True       
+   
+
+    #Omit sections options
+    if 'omitQuestionSource' in request.POST.keys():
+        examInstance.omitQuestionSource = True        
+
+    if 'omitInstructions' in request.POST.keys():
+        examInstance.omitInstructions = True   
+
+    if 'omitAnswers' in request.POST.keys():
+        examInstance.omitAnswers = True   
+
+    if 'omitFigures' in request.POST.keys():
+        examInstance.omitFigures = True
+
+
+    if 'omitMeta' in request.POST.keys():
+        examInstance.omitMeta = True            
+    
+    examInstance.num_edits = examInstance.num_edits + 1
+    examInstance.last_edited = timezone.now()
+    
+    examInstance.save()
+    examQuestions = getExamQuestions(examInstance.questions, False)
+    return render(request, 'exams/detail.html', {'exam': examInstance, 'questions': examQuestions})    
 
     
 @login_required

@@ -7,39 +7,64 @@
 {% if exam_question_list %}
 
   <link rel="stylesheet" href="//code.jquery.com/ui/1.12.0/themes/base/jquery-ui.css">
-  <style>
-  #sortable { list-style-type: none; margin: 0; padding: 0; width: 60%; }
-  #sortable li { margin: 0 3px 3px 3px; padding: 0.4em; padding-left: 1.5em; font-size: 1.4em; height: 18px; }
-  #sortable li span { position: absolute; margin-left: -1.3em; }
-  </style>
   <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
   <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"></script>
 
-<ul id="sortable" style="width: 524px;">
 
+  <style>
+  #sortable1, #sortable2 {
+    border: 1px solid #eee;
+    width: 400;
+    min-height: 20px;
+    list-style-type: none;
+    margin: 0;
+    padding: 5px 0 0 0;
+    float: left;
+    margin-right: 10px;
+  }
+  #sortable1 li, #sortable2 li {
+    margin: 0 5px 5px 5px;
+    padding: 5px;
+    font-size: 1.2em;
+    width: 350px;
+  }
+  </style>
+
+<ul id="sortable1" class="connectedSortableb">
     {% for question in exam_question_list %}
-		<li id="question_{{ question.id }}" class="ui-state-default"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}</li>    
+		<li id="question_{{ question.id }}" class="ui-state-default"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}&nbsp;&nbsp;&nbsp;<a href="">Remove From Exam</a></li>    
         {% endfor %}
-  
 </ul>
-
-  <script>
-$(function () {
-    $("#sortable").sortable({
+ 
+<ul id="sortable2" class="connectedSortableb">
+   {% for cquestion in cart_question_list %}
+		<li id="cquestion_{{ cquestion.id }}" class="ui-state-highlight"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{% autoescape off %}{{ cquestion.getHTMLQuestionSource }}{% endautoescape  %}&nbsp;&nbsp;&nbsp;<a href="">Remove From Exam</a></li>    
+        {% endfor %}  
+</ul>
+<script>
+  $( function() {
+    $("#sortable1").sortable({
+        connectWith: ".connectedSortableb",
+        dropOnEmpty: true,
         update: function (event, ui) {
             var order = $(this).sortable("serialize");
             $('#question_order').val(order);
-        }
+        }        
     }).disableSelection();
-
-});
+    $("#sortable2").sortable({
+        connectWith: ".connectedSortableb",
+        dropOnEmpty: true,       
+    }).disableSelection();    
+  } );
+  
   </script>
+
 
 {% else %}
     <p>No questions are available.</p>
 {% endif %}
 
-<br>
+<br><hr>
 
         <form action="{% url 'exams.update' exam.id %}" method="POST">{% csrf_token %}
          Exam name: <input type="text" name="examName" value="{{exam.exam_name}}"><br>

@@ -1488,4 +1488,7 @@ def processOrderingString(orderString):
         return questionList    
         
 def getQNum(s):
-    return int(s[11:])
+    if "cquestion" in s:
+        return int(s[12:])
+    else:
+        return int(s[11:])
