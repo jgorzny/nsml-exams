@@ -192,7 +192,11 @@ class Exam(models.Model):
     )
     layout = models.CharField(max_length=1,
                                       choices=EXAM_LAYOUTS ,
-                                      default=SECTIONS)    
+                                      default=SECTIONS)
+
+    header = models.TextField(max_length=2000,default='%Exam Header')
+    footer = models.TextField(max_length=2000,default='%Exam footer')
+                                      
    
 class QuestionForm(ModelForm):
     class Meta:

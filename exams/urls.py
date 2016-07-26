@@ -8,6 +8,9 @@ urlpatterns = [
     url(r'^(?P<exam_id>[0-9]+)/$', views.viewExam, name='exams.viewExam'),         
     url(r'^delall/$', views.deleteAll, name='exams.deleteAll'), 
     url(r'^(?P<exam_id>[0-9]+)/delete/$', views.deleteExam, name='exams.deleteExam'),
-    url(r'^(?P<exam_id>[0-9]+)/edit/$', views.editExam, name='exams.editExam'),        
+    url(r'^(?P<exam_id>[0-9]+)/edit/$', views.editExam, name='exams.editExam'),
+    url(r'^(?P<exam_id>[0-9]+)/update/$', views.updateExam, name='exams.update'),        
+    url(r'^(?P<exam_id>[0-9]+)/download/$', views.downloadExam, name='exams.downloadExam'),        
+    
 
 ]

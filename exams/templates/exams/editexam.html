@@ -1,0 +1,81 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+  
+<br>
+{% if exam %}
+{% if exam_question_list %}
+
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.0/themes/base/jquery-ui.css">
+  <style>
+  #sortable { list-style-type: none; margin: 0; padding: 0; width: 60%; }
+  #sortable li { margin: 0 3px 3px 3px; padding: 0.4em; padding-left: 1.5em; font-size: 1.4em; height: 18px; }
+  #sortable li span { position: absolute; margin-left: -1.3em; }
+  </style>
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"></script>
+
+<ul id="sortable" style="width: 524px;">
+
+    {% for question in exam_question_list %}
+		<li id="question_{{ question.id }}" class="ui-state-default"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}</li>    
+        {% endfor %}
+  
+</ul>
+
+  <script>
+$(function () {
+    $("#sortable").sortable({
+        update: function (event, ui) {
+            var order = $(this).sortable("serialize");
+            $('#question_order').val(order);
+        }
+    }).disableSelection();
+
+});
+  </script>
+
+{% else %}
+    <p>No questions are available.</p>
+{% endif %}
+
+<br>
+
+        <form action="{% url 'exams.update' exam.id %}" method="POST">{% csrf_token %}
+         Exam name: <input type="text" name="examName" value="{{exam.exam_name}}"><br>
+<textarea rows="4" cols="50" id="description_text" name="description_textarea" type="text">
+{{exam.exam_description}}
+</textarea> <br>                
+<textarea rows="4" cols="50" id="header_text" name="header_textarea" type="text">
+{{exam.header}}
+</textarea>
+<br>
+<textarea rows="4" cols="50" id="footer_text" name="footer_textarea" type="text" >
+{{exam.footer}}
+</textarea>
+<br>
+<input type="checkbox" name="omitQuestionSource" value="omitQuestionSource" {% if exam.omitQuestionSource %} checked="checked" {% endif %}>Omit question source<br>
+<input type="checkbox" name="omitInstructions" value="omitInstructions" {% if exam.omitInstructions %} checked="checked" {% endif %}>Omit question instructions<br>
+<input type="checkbox" name="omitAnswers" value="omitAnswers" {% if exam.omitAnswers %} checked="checked" {% endif %}>Omit question answers<br>
+<input type="checkbox" name="omitFigures" value="omitFigures" {% if exam.omitFigures %} checked="checked" {% endif %}>Omit question figures<br>
+<input type="checkbox" name="omitMeta" value="omitMeta" {% if exam.omitMeta %} checked="checked" {% endif %}>Omit question meta from comments<br>
+
+
+
+
+    
+  <input type="radio" name="questionlayout" value="sections" required {% if not exam.layout %} checked="checked" {% endif %}> Sections for Instructions, Questions, and Answers<br>
+  <input type="radio" name="questionlayout" value="together" {% if exam.layout %} checked="checked" {% endif %}> Instructions preceed questions, and answers follow them. 
+<br>
+<input type="checkbox" name="images_in_folder" value="imagesInFolder" {% if exam.imagesInFolder %} checked="checked" {% endif %}>Put images in '/images/'<br>
+<input type="checkbox" name="figures_in_appendix" value="figuresInAppendix" {% if exam.figuresInAppendix %} checked="checked" {% endif %}>Put figures in an appendix.<br>
+<input type="checkbox" name="omitPackages" value="omitPackages" {% if exam.omitPackages %} checked="checked" {% endif %}>Do not include packages<br>
+<input type="checkbox" name="inputFiles" value="inputFiles" {% if exam.inputFiles %} checked="checked" {% endif %}>Put each question part in a separate file<br>
+<input type="checkbox" name="shareExam" value="shareExam" {% if exam.is_public %} checked="checked" {% endif %}>Share Exam<br>
+
+    <input type="hidden" id="question_order" name="question_order" value="{% for question in exam_question_list %}{{ question.id }},{% endfor %}" />
+
+        <input type="submit" value="Update Exam">
+    </form>
+    {% endif %}
+{% endblock %}

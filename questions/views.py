@@ -928,12 +928,20 @@ def generateOptions(request):
     
     examName = request.POST['examName']
     
+    if len(examName) == 0:
+        examName = "New Exam-" + request.user.username + "-" + str(timezone.now())
+    
+    examName = examName.replace(':','-')
+    
     examInstance = Exam(exam_name=examName)
     examInstance.pub_date=timezone.now()
     examInstance.exam_author=request.user.username  
     
     headerText = request.POST['header_textarea']
     footerText = request.POST['footer_textarea']
+    
+    examInstance.header = headerText
+    examInstance.footer = footerText
     
     examInstance.exam_description = request.POST['description_textarea']
     if 'shareExam' in request.POST.keys():
@@ -962,7 +970,6 @@ def generateOptions(request):
         examInstance.questions = orderedQuestionList
         request.session["exam_cart"] = orderedQuestionList
     else:
-       
         examInstance.questions = request.session["exam_cart"]
     
     if 'images_in_folder' in request.POST.keys():
@@ -1034,7 +1041,7 @@ def generateOptions(request):
     
     request.session['fresh_exam'] = True
     
-    return render(request, 'questions/generate.html')   
+    return render(request, 'questions/generate.html', {'exam': examInstance})   
 
 #Helper, never meant to be called by URL directly:
 def noAccess(request):

@@ -6,8 +6,13 @@
 
 <h1> {{ exam.exam_name }} </h1>
 <ul>
-	<li> Published Date: {{ exam.pub_date }} </li>
     <li> Exam Description: {{ exam.exam_description }} </li>
+
+    <li> Exam Header: {{ exam.header }} </li>
+    <li> Exam Footer: {{ exam.footer }} </li>
+
+    
+	<li> Published Date: {{ exam.pub_date }} </li>
     <li> Last Edit Date: {{ exam.last_edited }} </li>
     <li> Number of Edits: {{ exam.num_edits }} </li>
     <li> Contributing Authors: {{ exam.contributing_authors }} </li>
@@ -40,8 +45,13 @@ Questions:
 
 {% if exam.exam_author == user.username or user.is_superuser %}
 <a href="{% url 'exams.editExam' exam.id %}">Edit</a>
+<br>
+<a href="{% url 'exams.downloadExam' exam.id %}">Download your exam.</a><br>
+<br>
 {% endif %}
 <br>
+
+
 
 <br>
 {% if user.is_superuser or user.username == exam.exam_author %}

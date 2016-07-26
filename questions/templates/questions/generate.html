@@ -1,7 +1,9 @@
 {% extends 'home/base.html' %}
 
 {% block content %}
-
+<br>
 Do not hit the back button or your question ordering may not be preserved.<br>
-<a href="{% url 'questions.cart.make' %}">Download your exam.</a>
+<a href="{% url 'questions.cart.make' %}">Download your exam.</a><br>
+
+<a href="{% url 'exams.viewExam' exam.id %}">View Exam</a><br>
 {% endblock %}
