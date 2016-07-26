@@ -27,7 +27,8 @@ import socket
 import shutil
 import random
 
-from .models import Question, QuestionForm, QuestionSearch, Images, Tables
+
+from .models import Question, QuestionForm, QuestionSearch, Images, Tables, Exam
 
 #Constant (helper) functions
 
@@ -324,6 +325,9 @@ def add(request):
 @login_required	
 def edit(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
+    if request.user.username != question.initial_author and not request.user.is_superuser:
+        return noAccess(request)
+        
     if request.method == "POST":
         form = QuestionForm(request.POST, instance=question)
         
@@ -517,18 +521,18 @@ def deleteAllQuestions(request):
         deleteAllQuestionsAndClean()
         return render(request, 'questions/qalldeleted.html')
     else:
-        noAccess(request)
+        return noAccess(request)
             
 @login_required
 def deleteQuestion(request, question_id):
-    if request.user.is_superuser:
-        question = get_object_or_404(Question, pk=question_id)
+    question = get_object_or_404(Question, pk=question_id)
+    if request.user.is_superuser or (request.user.username == question.initial_author):
         deleteQuestionAndClean(question)
         removeFromCartHelper(request, question_id)
         removeFiles(question_id)
         return render(request, 'questions/qdeleted.html')
     else:
-        noAccess(request)
+        return noAccess(request)
 
 #Helper
 def removeCacheFiles(qid):
@@ -924,8 +928,19 @@ def generateOptions(request):
     
     examName = request.POST['examName']
     
+    examInstance = Exam(exam_name=examName)
+    examInstance.pub_date=timezone.now()
+    examInstance.exam_author=request.user.username  
+    
     headerText = request.POST['header_textarea']
     footerText = request.POST['footer_textarea']
+    
+    examInstance.exam_description = request.POST['description_textarea']
+    if 'shareExam' in request.POST.keys():
+        examInstance.is_public = True  
+    
+    request.last_edited = timezone.now()
+    request.num_edits = 0
     
     request.session['exam_header'] = headerText
     request.session['exam_footer'] = footerText
@@ -933,70 +948,89 @@ def generateOptions(request):
     
     order = request.POST['questionlayout']
     
-    request.session['exam_order'] = order
+    if order == "sections":
+        examInstance.layout = '0'
+    else:
+        examInstance.layout = '1'
     
+    print "Cart:",request.session["exam_cart"]
     if 'question_order' in request.POST.keys():
         #print("order found", request.POST['question_order'])
         questionOrderString = request.POST['question_order']
         orderedQuestionList = processOrderingString(questionOrderString)
         #print("OQL:",orderedQuestionList)
+        examInstance.questions = orderedQuestionList
         request.session["exam_cart"] = orderedQuestionList
+    else:
+       
+        examInstance.questions = request.session["exam_cart"]
     
     if 'images_in_folder' in request.POST.keys():
         request.session['exam_images'] = True 
+        examInstance.imagesInFolder = True
     else:
         if 'exam_images' in request.session:
             del request.session['exam_images']
         
     if 'figures_in_appendix' in request.POST.keys():
         request.session['exam_appendix'] = True
+        examInstance.figuresInAppendix = True
     else:
         if 'exam_appendix' in request.session:
             del request.session['exam_appendix']        
 
     if 'omitPackages' in request.POST.keys():
         request.session['exam_omit'] = True
+        examInstance.omitPackages = True
     else:
         if 'exam_omit' in request.session:
             del request.session['exam_omit']        
         
     if 'inputFiles' in request.POST.keys():
-        request.session['qfiles'] = True  
+        request.session['qfiles'] = True
+        examInstance.inputFiles = True       
     else:
         if 'qfiles' in request.session:
             del request.session['qfiles']    
 
     #Omit sections options
     if 'omitQuestionSource' in request.POST.keys():
-        request.session['omitQuestionSource'] = True  
+        request.session['omitQuestionSource'] = True
+        examInstance.omitQuestionSource = True
     else:
         if 'omitQuestionSource' in request.session:
             del request.session['omitQuestionSource']         
 
     if 'omitInstructions' in request.POST.keys():
-        request.session['omitInstructions'] = True  
+        request.session['omitInstructions'] = True
+        examInstance.omitInstructions = True
     else:
         if 'omitInstructions' in request.session:
             del request.session['omitInstructions']    
 
     if 'omitAnswers' in request.POST.keys():
-        request.session['omitAnswers'] = True  
+        request.session['omitAnswers'] = True
+        examInstance.omitAnswers = True
     else:
         if 'omitAnswers' in request.session:
             del request.session['omitAnswers']    
 
     if 'omitFigures' in request.POST.keys():
-        request.session['omitFigures'] = True  
+        request.session['omitFigures'] = True
+        examInstance.omitFigures = True
     else:
         if 'omitFigures' in request.session:
             del request.session['omitFigures']   
 
 
     if 'omitMeta' in request.POST.keys():
-        request.session['omitMeta'] = True  
+        request.session['omitMeta'] = True
+        examInstance.omitMeta = True
     else:
         if 'omitMeta' in request.session:
             del request.session['omitMeta']             
+    
+    examInstance.save()
     
     request.session['fresh_exam'] = True
     
@@ -1014,6 +1048,7 @@ def makeExam(request):
     
     freshExam = request.session['fresh_exam']
     examName = request.session['examName']
+    
     
     #Make files for each question
     cart = request.session["exam_cart"]
@@ -1118,7 +1153,7 @@ def makeExam(request):
     resp = HttpResponse(s.getvalue(), content_type = "application/x-zip-compressed")
     # ..and correct content-disposition
     resp['Content-Disposition'] = 'attachment; filename=%s' % zip_filename
-
+        
     return resp
     
 #Helper
@@ -1426,6 +1461,7 @@ def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendi
     texDocClose(mainFile)
     return (out, examDir)
         
+            
 #Helper, not intended to be called directly        
 def processOrderingString(orderString):
     print("OS:",orderString)

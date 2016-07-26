@@ -70,6 +70,7 @@ Text to put after the questions.
 <input type="checkbox" name="figures_in_appendix" value="figuresInAppendix">Put figures in an appendix.<br>
 <input type="checkbox" name="omitPackages" value="omitPackages">Do not include packages<br>
 <input type="checkbox" name="inputFiles" value="inputFiles">Put each question part in a separate file<br>
+<input type="checkbox" name="shareExam" value="shareExam">Share Exam<br>
 
     <input type="hidden" id="question_order" name="question_order" value="{% for question in cart_question_list %}{{ question.id }},{% endfor %}" />
 

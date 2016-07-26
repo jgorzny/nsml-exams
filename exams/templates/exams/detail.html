@@ -1,0 +1,52 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+
+{% if exam.is_public or exam.exam_author == user.username or user.is_superuser %}
+
+<h1> {{ exam.exam_name }} </h1>
+<ul>
+	<li> Published Date: {{ exam.pub_date }} </li>
+    <li> Exam Description: {{ exam.exam_description }} </li>
+    <li> Last Edit Date: {{ exam.last_edited }} </li>
+    <li> Number of Edits: {{ exam.num_edits }} </li>
+    <li> Contributing Authors: {{ exam.contributing_authors }} </li>
+    <li> Exam Author: {{ exam.exam_author }} </li>
+    <li> Is Public: {{ exam.is_public }} </li>
+
+    <li> Omit Question Source: {{ exam.omitQuestionSource }} </li>
+    <li> Omit Instructions: {{ exam.omitInstructions }} </li>
+    <li> Omit Answers: {{ exam.omitAnswers }} </li>
+    <li> Omit Figures: {{ exam.omitFigures }} </li>
+    <li> Omit Meta: {{ exam.omitMeta }} </li>
+
+    <li> Put images in folder: {{ exam.imagesInFolder }} </li>
+    <li> Omit standard packages: {{ exam.omitPackages }} </li>
+    <li> Put figures in appendix: {{ exam.figuresInAppendix }} </li>
+    <li> One question per file: {{ exam.inputFiles }} </li>
+
+    <li> Layout: {{ exam.layout }} </li>
+         
+    
+</ul>
+Questions:
+<ol>
+{% for question in questions %}
+<li><a href="{% url 'detail' question.id %}">{% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}</a></li>
+{% endfor %}
+
+</ol>
+
+
+{% if exam.exam_author == user.username or user.is_superuser %}
+<a href="{% url 'exams.editExam' exam.id %}">Edit</a>
+{% endif %}
+<br>
+
+<br>
+{% if user.is_superuser or user.username == exam.exam_author %}
+
+<a href="{% url 'exams.deleteExam' exam.id %}">Delete Exam</a>
+{% endif %}
+{% endif %}
+{% endblock %}

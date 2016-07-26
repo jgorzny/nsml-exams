@@ -172,6 +172,27 @@ class Exam(models.Model):
     tags = TagAutocompleteField()
     is_public = models.BooleanField(default=False)
     questions = models.CommaSeparatedIntegerField(max_length=200)
+    
+    omitQuestionSource = models.BooleanField(default=False)
+    omitInstructions = models.BooleanField(default=False)
+    omitAnswers = models.BooleanField(default=False)
+    omitFigures = models.BooleanField(default=False)
+    omitMeta = models.BooleanField(default=False)
+     
+    imagesInFolder = models.BooleanField(default=False)
+    figuresInAppendix = models.BooleanField(default=False)
+    omitPackages = models.BooleanField(default=False)
+    inputFiles = models.BooleanField(default=False)
+
+    SECTIONS = '0'
+    TOGETHER = '1'
+    EXAM_LAYOUTS = (
+        (SECTIONS, 'Sections'),
+        (TOGETHER, 'Together'),
+    )
+    layout = models.CharField(max_length=1,
+                                      choices=EXAM_LAYOUTS ,
+                                      default=SECTIONS)    
    
 class QuestionForm(ModelForm):
     class Meta:
