@@ -32,13 +32,13 @@
 
 <ul id="sortable1" class="connectedSortableb">
     {% for question in exam_question_list %}
-		<li id="question_{{ question.id }}" class="ui-state-default"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}&nbsp;&nbsp;&nbsp;<a href="">Remove From Exam</a></li>    
+		<li id="question_{{ question.id }}" class="ui-state-default"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}</li>    
         {% endfor %}
 </ul>
  
 <ul id="sortable2" class="connectedSortableb">
    {% for cquestion in cart_question_list %}
-		<li id="cquestion_{{ cquestion.id }}" class="ui-state-highlight"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{% autoescape off %}{{ cquestion.getHTMLQuestionSource }}{% endautoescape  %}&nbsp;&nbsp;&nbsp;<a href="">Remove From Exam</a></li>    
+		<li id="cquestion_{{ cquestion.id }}" class="ui-state-highlight"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{% autoescape off %}{{ cquestion.getHTMLQuestionSource }}{% endautoescape  %}</li>    
         {% endfor %}  
 </ul>
 <script>
