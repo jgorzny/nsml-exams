@@ -1,0 +1,31 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+
+<h1>Exam Search Results</h1>
+{% if stext %}
+You entered the following query:
+    <ul>
+    <li>Text: {{ stext }}</li>   
+    </ul>
+{% else %}
+    <p>No text searched.</p>
+{% endif %}
+
+Which returned the following exams:<br>
+{% if exams %}
+<ul>
+{% for exam in exams %}
+<li><a href="{% url 'exams.viewExam' exam.id %}">{{exam.exam_name}}</a></li>
+{% endfor %}
+<ul>
+
+{% else %}
+    <p>No exams were found.</p>
+{% endif %}
+
+<br>
+
+
+
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'home/base.html' %}
+
+
+{% block content %}
+<h1>Search Exams</h1>
+    <form action="/exams/search_results/" method="GET">{% csrf_token %}
+         Search query (in exam name):
+         <input type="text" name="stext"><br>
+        <input type="submit" value="Search">
+    </form>
+{% endblock %}

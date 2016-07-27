@@ -11,8 +11,12 @@
 {% else %}
     <p>No exams are available.</p>
 {% endif %}
-
+<br>
+<a href="{% url 'exams.deleteEmpty' %}">Remove all empty exams you authored</a><br>
+<br>
 {% if user.is_superuser %}
+Dump everyone's empty exams? Can't be undone.<br>
+<a href="{% url 'exams.deleteAllEmpty' %}">Remove all empty.</a><br>
 Dump all exams? Can't be undone.
 <br>
 <a href="{% url 'exams.deleteAll' %}">Delete All Exams</a>

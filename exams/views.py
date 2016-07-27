@@ -11,7 +11,7 @@ import zipfile
 import StringIO
 import os
 
-from questions.views import makeSectionExam, makeTogetherExam, removeDir, processOrderingString
+from questions.views import makeSectionExam, makeTogetherExam, removeDir, processOrderingString, noAccess, updateQuestionStats
 
 #Helper
 def getExams(request):
@@ -60,7 +60,25 @@ def makeIntList(cart):
         out.append(int(qid))
     return out    
       
-    
+@login_required
+def deleteEmpty(request):
+    exams = questions.models.Exam.objects.filter(exam_author=request.user.username)
+    for e in exams:
+        if e.questions == "[]":
+            e.delete()
+    return render(request, 'exams/eallemptydeleted.html')  
+
+@login_required
+def deleteAllEmpty(request):
+    if request.user.is_superuser:
+        exams = questions.models.Exam.objects.all()
+        for e in exams:
+            if e.questions == "[]":
+                e.delete()
+        return render(request, 'exams/eallemptydeleted.html')      
+    else:
+        return noAccess(request)
+        
 @login_required
 def deleteAll(request):
     exams = questions.models.Exam.objects.all()
@@ -91,6 +109,8 @@ def downloadExam(request, exam_id):
       
     #Make files for each question
     cart = makeIntList(exam.questions[1:-1])
+    
+    updateQuestionStats(cart)
     
     # Files (local path) to put in the .zip
     filenames = []
@@ -239,10 +259,25 @@ def updateExam(request, exam_id):
     examQuestions = getExamQuestions(examInstance.questions, False)
     return render(request, 'exams/detail.html', {'exam': examInstance, 'questions': examQuestions})    
 
-#TODO this    
 @login_required
 def searchExams(request):
-    return render(request, 'exams/search.html')    
+    return render(request, 'exams/search.html')   
+
+#TODO this        
+@login_required
+def examSearchResults(request):
+    if 'stext' in request.GET:
+        sText = request.GET['stext']
+        context = ({'stext': sText})
+        if len(sText) > 0:
+            if not request.user.is_superuser:
+                foundExams = getExams(request).filter(exam_name__contains=sText)
+            else:
+                foundExams = questions.models.Exam.objects.filter(exam_name__contains=sText)
+            context.update({'exams': foundExams})
+    else:
+        context = None
+    return render(request, 'exams/searchresults.html', context)        
     
 
 

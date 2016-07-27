@@ -196,8 +196,16 @@ class Exam(models.Model):
 
     header = models.TextField(max_length=2000,default='%Exam Header')
     footer = models.TextField(max_length=2000,default='%Exam footer')
-                                      
+            
+    def __unicode__(self):
+        return u'%s %s' % ("Exam",self.pk)            
    
+    def get_layout_name(self):
+        if self.layout == '0':
+            return "Sections"
+        else: #self.layout == '1'
+            return "Together"   
+            
 class QuestionForm(ModelForm):
     class Meta:
         model = Question

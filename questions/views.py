@@ -1245,9 +1245,8 @@ def updateQuestionStats(cart):
     for qid in cart:
         question = Question.objects.get(id=qid)
         
-        question.num_used = question.num_used + 1
-        question.last_usded = datetime.now
-    
+        question.last_used = timezone.now()
+        question.save()
         updateCachedFiles(qid)    
         
 #Helper
@@ -1287,6 +1286,7 @@ def makeSectionExam(cart, includeSepFiles, examName, eheader, efooter, eAppendix
     
     for qid in cart:
         question = Question.objects.get(id=qid)
+
         qDir = getCacheDir(qid)
         
         if includeSepFiles:
@@ -1478,6 +1478,7 @@ def makeTogetherExam(cart, includeSepFiles, examName, eheader, efooter, eAppendi
     
     for qid in cart:
         question = Question.objects.get(id=qid)
+       
         qDir = getCacheDir(qid)
         
         if not omitQuestions:
