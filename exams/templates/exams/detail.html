@@ -35,13 +35,16 @@
     
 </ul>
 Questions:
+{% if questions %}
 <ol>
 {% for question in questions %}
 <li><a href="{% url 'detail' question.id %}">{% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}</a></li>
 {% endfor %}
 
 </ol>
-
+{% else %}
+<br>None - All questions must have been removed!<br>
+{% endif %}
 
 {% if exam.exam_author == user.username or user.is_superuser %}
 <a href="{% url 'exams.editExam' exam.id %}">Edit</a>

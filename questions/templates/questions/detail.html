@@ -28,15 +28,18 @@
     <li> Owner: {{ question.initial_author}}</li>
     <li> Contributing authors: {{ question.contributing_authors}}</li>  
 
-    <li> Last used on: {{ question.last_used}} </li>
-    <li> Number of times used: {{ question.num_used}} </li>
+    <li> Last used on: {{ question.last_used}}</li>
+    <li> Number of times used: {{ question.num_used}} <a href="{% url 'questions.exams.show' question.id %}">See exams where this question is used.</a></li>
     
     <li> Is public?: {{ question.is_public}} </li>
 </ul>
 {% if question.initial_author == user.username or user.is_superuser %}
 <a href="{% url 'edit' question.id %}">Edit</a>
+<br>
+<a href="{% url 'questions.exams.removeAll' question.id %}">Remove from all exams</a>
+<br>
 {% endif %}
-<a href="{% url 'questions.cart.add' question.id %}">Add to Exam</a>
+<br><a href="{% url 'questions.cart.add' question.id %}">Add to Exam</a>
 <br>
 {% if user.username != question.initial_author %}
 <br>

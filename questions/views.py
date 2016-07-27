@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, render
 from django.shortcuts import redirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from django.db.models import Q
 
 from django import forms
 from django.utils import timezone
@@ -70,6 +71,8 @@ def index(request):
 @login_required
 def detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
+    question.num_used = getQuestionUseCount(question_id)
+    question.save()
     return render(request, 'questions/detail.html', {'question': question})
     
 #Helper
@@ -322,6 +325,79 @@ def add(request):
         form = QuestionForm()
     return render(request, 'questions/add.html', {'form': form, 'isEdit': False})
 
+#Helper
+def getExamsContainingQuestion(qid):
+    sw = '['+str(qid)+','
+    ew = ','+str(qid)+']'
+    con = ','+str(qid)+','
+    ex = '[' + str(qid) + ']'
+    examList = Exam.objects.filter( Q(questions__startswith=sw) | Q(questions__endswith=ew) | Q(questions__contains=con) | Q(questions__exact=ex) )
+    print "exams containing",qid,"are",examList
+    return examList
+    
+#Helper    
+def getQuestionUseCount(qid):
+    return getExamsContainingQuestion(qid).count()
+    
+#Helper
+def removeQuestionFromExamHelper(qid, e):
+    examQuestionsString = e.questions
+    if(str(examQuestionsString) == "[]"):
+        return
+    
+    examQuestionList = examQuestionsString.split(',')
+    print "exam questions then:",examQuestionList
+    out = []
+    for le in examQuestionList:
+        if '[' in le:
+            if ']' in le:
+                leFormmated = le[1:-1]
+            else:
+                leFormmated = le[1:]
+        elif ']' in le:
+            leFormmated = le[:-1]
+        else:
+            leFormmated = le
+        if int(leFormmated) != int(qid):
+            out.append(int(leFormmated))
+    e.questions = out
+    e.num_edits = e.num_edits + 1
+    e.last_edited = timezone.now()
+    print "exam questions now:",out
+    e.save()
+    
+    
+@login_required	
+def removeQuestionFromExams(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    if request.user.is_superuser or request.user.username == question.initial_author:
+        examList = getExamsContainingQuestion(question_id)
+        for e in examList:
+            removeQuestionFromExamHelper(question_id, e)
+            
+        return render(request, 'questions/qremovedfromall.html')
+        
+    else:
+        return noAccess(request)
+        
+@login_required	
+def removeQuestionFromOneExam(request, question_id, exam_id):
+    question = get_object_or_404(Question, pk=question_id)
+    exam = get_object_or_404(Exam, pk=exam_id)
+    if request.user.is_superuser or request.user.username == question.initial_author:
+        removeQuestionFromExamHelper(question_id, exam)
+            
+        examList = getExamsContainingQuestion(question_id)
+        return render(request, 'questions/qexams.html', {'exams': examList, 'question': question})        
+    else:
+        return noAccess(request)        
+    
+@login_required	
+def viewExamsContainingQuestion(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    examList = getExamsContainingQuestion(question_id)
+    return render(request, 'questions/qexams.html', {'exams': examList, 'question': question})
+    
 @login_required	
 def edit(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
@@ -339,6 +415,7 @@ def edit(request, question_id):
         if form.is_valid():
             question = form.save(commit=False)
             question.last_edited = timezone.now()
+            question.num_edits = question.num_edits + 1
             question.save()
 
             questionid = question.pk
@@ -947,8 +1024,8 @@ def generateOptions(request):
     if 'shareExam' in request.POST.keys():
         examInstance.is_public = True  
     
-    request.last_edited = timezone.now()
-    request.num_edits = 0
+    examInstance.last_edited = timezone.now()
+    examInstance.num_edits = 0
     
     request.session['exam_header'] = headerText
     request.session['exam_footer'] = footerText

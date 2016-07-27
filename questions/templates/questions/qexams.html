@@ -1,0 +1,12 @@
+{% extends 'home/base.html' %}
+
+
+{% block content %}
+<ul>
+{% for exam in exams %}
+<li><a href="{% url 'exams.viewExam' exam.id %}">{{exam.exam_name}}</a>        {% if exam.exam_author == user.username or user.is_superuser %}<a href="{% url 'questions.exams.removeOne' question.id exam.id %}">Remove from exam</a>{% endif %}</li>
+{% endfor %}
+</ul>
+
+<a href="{% url 'detail' question.id %}">Back to {% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %}</a> 
+{% endblock %}

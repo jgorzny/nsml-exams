@@ -33,9 +33,12 @@ def recentExams(request):
 def viewExam(request, exam_id):
     exam = get_object_or_404(questions.models.Exam, pk=exam_id)
     print "view Exam request",exam.questions
-    
-    examQuestions = getExamQuestions(exam.questions[1:-1], True)
-    return render(request, 'exams/detail.html', {'exam': exam, 'questions': examQuestions}) 
+
+    context = {'exam': exam}
+    if len(exam.questions) > 2:
+        examQuestions = getExamQuestions(exam.questions[1:-1], True)
+        context.update({'questions': examQuestions})
+    return render(request, 'exams/detail.html', context) 
 
 #Helper
 def getExamQuestions(cart, split):
@@ -155,7 +158,6 @@ def downloadExam(request, exam_id):
         
     return resp   
     
-#TODO: these    
 @login_required
 def updateExam(request, exam_id): 
     examName = request.POST['examName']
@@ -237,7 +239,7 @@ def updateExam(request, exam_id):
     examQuestions = getExamQuestions(examInstance.questions, False)
     return render(request, 'exams/detail.html', {'exam': examInstance, 'questions': examQuestions})    
 
-    
+#TODO this    
 @login_required
 def searchExams(request):
     return render(request, 'exams/search.html')    
