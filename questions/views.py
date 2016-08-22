@@ -7,6 +7,7 @@ import os
 from django.contrib.auth.decorators import login_required
 from datetime import datetime    
 
+import ast
 
 from django.shortcuts import get_object_or_404, render
 from django.shortcuts import redirect
@@ -51,6 +52,9 @@ def cacheASExt():
 def getCacheDir(qid):
     return settings.QUESTIONS_DIRS + "q" + str(qid) + "-c" + os.sep
     
+def getCartDir(uname):
+    return settings.CARTS_DIRS + "cart-" + str(uname) + "" + os.sep    
+    
 def getImageDir(qid):
     return settings.QUESTIONS_DIRS + "q" + str(qid) + "-i" + os.sep   
    
@@ -66,8 +70,22 @@ def index(request):
     allQuestions = getQuestions(request)
     latest_question_list = allQuestions.order_by('pub_date')[:5]
     context = {'latest_question_list': latest_question_list}
+    
     return render(request, 'questions/index.html', context)
 	
+#Helper
+def getCartFromFile(uname): 
+    cartFileName = makeCartFileDir(uname + "-cart.txt", uname) #Ensures that the dir for the file exists
+    cfile = open(cartFileName, 'r')
+    cartString = cfile.readline()
+    
+    if cartString == "[]":
+        cfile.close()
+        return #Do nothing
+    else:
+        cfile.close()
+        return ast.literal_eval(cartString)
+    
 @login_required
 def detail(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
@@ -88,6 +106,13 @@ def makeCacheFileName(fname, qid):
     if not os.path.exists(directory):
         os.makedirs(directory)
     return directory + fname
+    
+#Helper
+def makeCartFileDir(fname, uname):
+    directory = getCartDir(uname)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    return directory + fname    
     
 #Helper    
 def handle_uploaded_file(f, fname):
@@ -967,28 +992,49 @@ def store(request, question_id):
 #Helper, not intended to be called by URL directly
 def addQuestionToCart(request, question_id):
     if "exam_cart" in request.session:
-        cart = request.session["exam_cart"]
-        cart.append(question_id)
-        request.session["exam_cart"] = cart
+        if request.session["exam_cart"]:
+            cart = request.session["exam_cart"]
+            cart.append(question_id)
+            request.session["exam_cart"] = cart
+        else:
+            cart = [question_id]
+            request.session["exam_cart"] = cart  
     else:
         cart = [question_id]
-        request.session["exam_cart"] = cart    
+        request.session["exam_cart"] = cart  
+    writeCartToFile(request.user.username, cart)
+        
+    
+    
+#Helper  
+def writeCartToFile(uname, cart):
+    cartFileName = makeCartFileDir(uname + "-cart.txt", uname) #Ensures that the dir for the file exists
+    wr = open(cartFileName, 'w')
+    wr.write(str(cart))
     
 @login_required
 def removeFromCart(request, question_id):
+    print "Removing question " + str(question_id)
     removeFromCartHelper(request, question_id)
     return render(request, 'questions/qremoved.html')
     
 #Helper, not intended to be called by URL directly
 def removeFromCartHelper(request, question_id):
+    print request.session.keys()
     if "exam_cart" in request.session:
+            print "A"
             cart = request.session["exam_cart"]
-            if int(question_id) in cart:
-                cart = remove_values_from_list(cart, int(question_id))
+            print str(cart) + " " + question_id
+            if question_id in cart:
+                print "aaaa"
+            if question_id in cart:
+                print "B"
+                cart = remove_values_from_list(cart, question_id)
                 request.session["exam_cart"] = cart
                 print("Question was removed - ",cart)
             if len(cart) == 0: 
                 del request.session["exam_cart"]
+            writeCartToFile(request.user.username, cart)
 #Helper
 def remove_values_from_list(the_list, val):
    return [value for value in the_list if value != val]
@@ -996,6 +1042,7 @@ def remove_values_from_list(the_list, val):
 @login_required
 def emptyCart(request):
     if "exam_cart" in request.session:
+        writeCartToFile(request.user.username, [])
         del request.session["exam_cart"]
     return render(request, 'questions/cartempty.html')  
 
@@ -1035,8 +1082,12 @@ def generateOptions(request):
     
     if order == "sections":
         examInstance.layout = '0'
+        print "X"
+        request.session["exam_order"] = "sections"
     else:
         examInstance.layout = '1'
+        print "Y"
+        request.session["exam_order"] = "together"
     
     print "Cart:",request.session["exam_cart"]
     if 'question_order' in request.POST.keys():
@@ -1127,7 +1178,7 @@ def noAccess(request):
 @login_required
 def makeExam(request):
     #http://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
-    
+    print "in make, all session keys: " + str(request.session.keys())
     print "In make: ", request.session['exam_order'], request.session['exam_cart']
     
     freshExam = request.session['fresh_exam']

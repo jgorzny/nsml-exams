@@ -19,6 +19,7 @@ STATICFILES_DIRS = (
     os.path.join(CURRENT_PATH, 'static'),
 )
 QUESTIONS_DIRS = "D:\\Consulting\\NSMLExamBank\\NSMLEB\\questions\\static\\questions\\questionfiles\\"
+CARTS_DIRS = "D:\\Consulting\\NSMLExamBank\\NSMLEB\\questions\\static\\questions\\carts\\"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
