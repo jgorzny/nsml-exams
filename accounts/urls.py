@@ -29,4 +29,5 @@ urlpatterns = [
         name='password_change_done',
         kwargs={'template_name': 'accounts/password_change_done.html'}
     ),	
+    
 ]

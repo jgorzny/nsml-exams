@@ -1,0 +1,14 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+Your exam templates: <br>
+<ul>
+{% for template in templates %}
+<li><a href="{% url 'exams.ViewTemplate' template.pk %}">{{ template.name }}</a> {{ template.description }}</li>
+{% endfor %}
+</ul>
+
+{% if templates.count < 5 %}
+<a href="{% url 'exams.addTemplate' %}">Add a new template.</a>
+{% endif %}
+{% endblock %}

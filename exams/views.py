@@ -1,4 +1,4 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.utils import timezone
@@ -99,7 +99,8 @@ def editExam(request, exam_id):
     cartList = request.session["exam_cart"]
     examQuestionListInts=makeIntList(exam.questions[1:-1])
     cart_question_list = questions.models.Question.objects.filter(id__in=cartList).exclude(id__in=examQuestionListInts) #don't show things already in this exam
-    return render(request, 'exams/editexam.html', {'exam': exam, 'exam_question_list': examQuestionList, 'cart_question_list':cart_question_list})
+    userTemplates = questions.models.ExamTemplate.objects.filter(template_author=request.user.username) 
+    return render(request, 'exams/editexam.html', {'exam': exam, 'exam_question_list': examQuestionList, 'cart_question_list':cart_question_list, 'personaltemplates': userTemplates})
 
 @login_required
 def downloadExam(request, exam_id): 
@@ -255,6 +256,14 @@ def updateExam(request, exam_id):
     examInstance.num_edits = examInstance.num_edits + 1
     examInstance.last_edited = timezone.now()
     
+    if 'personal_template' in request.POST.keys():
+        if not(request.POST['personal_template'] == "none"):
+            user_templates = questions.models.ExamTemplate.objects.filter(template_author=request.user.username) 
+            templateInstance = user_templates.get(pk = request.POST['personal_template'])
+            print "requested ti:",request.POST['personal_template']
+            print "TI iD:", templateInstance.pk
+            examInstance.personal_template = templateInstance
+    
     examInstance.save()
     examQuestions = getExamQuestions(examInstance.questions, False)
     return render(request, 'exams/detail.html', {'exam': examInstance, 'questions': examQuestions})    
@@ -263,7 +272,7 @@ def updateExam(request, exam_id):
 def searchExams(request):
     return render(request, 'exams/search.html')   
 
-#TODO this        
+#TODO this        ?
 @login_required
 def examSearchResults(request):
     if 'stext' in request.GET:
@@ -279,5 +288,91 @@ def examSearchResults(request):
         context = None
     return render(request, 'exams/searchresults.html', context)        
     
+@login_required
+def examTemplates(request):    
+    foundTemplates = questions.models.ExamTemplate.objects.filter(template_author=request.user.username) 
+    context = ({'templates' : foundTemplates})
+    return render(request, 'exams/templatelist.html', context)
+
+#Helper
+def tooManyTemplates(request):
+    foundTemplates = questions.models.ExamTemplate.objects.filter(template_author=request.user.username) 
+    numTemplates = foundTemplates.count()
+    if numTemplates > 4:
+        return True
+    else:
+        return False
+   
+@login_required
+def examAddTemplate(request):   
+    if request.method == "POST":
+        form = questions.models.TemplateForm(request.POST)
+        if form.is_valid():
+            print "(Template) postValues:", request.POST.values()
+            print "(Template) postKeys:", request.POST.keys()
+            
+            template = form.save(commit=False)
+
+            template.pub_date = timezone.now()
+            
+            template.template_author = request.user.username
+            
+            if tooManyTemplates(request):
+                return render(request, 'exams/toomanytemplates.html')
+            
+            template.save()
+
+            templateid = template.pk
+            
+         
+            return redirect('exams.ViewTemplate', template.pk)
+        else:
+            print "template form is not valid?"
+    else:
+        form = questions.models.TemplateForm()
+    context = ({'form': form})
+    return render(request, 'exams/edittemplate.html', context)    
+  
+@login_required
+def examEditTemplate(request, templateid):    
+    template = get_object_or_404(questions.models.ExamTemplate, pk=templateid)
+    if request.user.username != template.template_author: #Note that super users can't edit these unless they own them
+        return noAccess(request)
+        
+    if request.method == "POST":
+        form = questions.models.TemplateForm(request.POST, instance=template)
+        
+        print "postValues:", request.POST.values()
+        print "postKeys:", request.POST.keys()
+
+            
+        if form.is_valid():
+            template = form.save(commit=False)
+            template.last_edited = timezone.now()
+            template.num_edits = template.num_edits + 1
+            template.save()
+
+            templatepk = template.pk
+            
+            return redirect('exams.ViewTemplate', templatepk)
+    else:
+        form = questions.models.TemplateForm(instance=template)
+    return render(request, 'exams/edittemplate.html', {'form': form})  
+
+@login_required
+def examDelTemplate(request, templateid):    
+    template = get_object_or_404(questions.models.ExamTemplate, pk=templateid)
+    if (template.template_author == request.user.username):
+        template.delete()
+    return render(request, 'exams/templatedeleted.html')      
+
+@login_required
+def examViewTemplate(request, templateid):
+    t = get_object_or_404(questions.models.ExamTemplate, pk=templateid)
+    if (t.template_author == request.user.username):
+        context = ({'template' : t})
+        return render(request, 'exams/viewtemplate.html', context)      
+    else:
+        return render(request, 'exams/templatedenied.html')
 
 

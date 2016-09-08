@@ -15,6 +15,11 @@
 <p><a href="{% url 'exams.recentExams' %}">View Exams</a></p>
 <p><a href="{% url 'exams.search' %}">Search Exams</a></p>
 </div>
+<br>
+<div>
+<p><a href="{% url 'exams.templates' %}">Your Exam Templates</a></p>
+</div>
+<br>
 <div>
 {% if user.is_superuser %}
 <br>

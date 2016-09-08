@@ -95,7 +95,14 @@ Text to put after the questions.
 <input type="checkbox" name="shareExam" value="shareExam">Share Exam<br>
 
     <input type="hidden" id="question_order" name="question_order" value="{% for question in cart_question_list %}{{ question.id }},{% endfor %}" />
-
+        {% if personaltemplates %}
+        Personal template to use:<br>
+      <input type="radio" name="personal_template" value="none" {% if not exam.personal_template %}checked="checked"{% endif %}> None<br>
+      {% for template in personaltemplates %}
+            <input type="radio" name="personal_template" value="{{ template.pk }}" {% if exam.personal_template %}{% if exam.personal_template == template %}checked="checked"{% endif %}{% endif %}> {{ template.name }}<br>
+      {% endfor %}
+      {% endif %}
+    
         <input type="submit" value="Generate Exam">
     </form>
 {% endblock %}

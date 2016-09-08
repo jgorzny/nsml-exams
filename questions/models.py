@@ -183,6 +183,8 @@ class Exam(models.Model):
     figuresInAppendix = models.BooleanField(default=False)
     omitPackages = models.BooleanField(default=False)
     inputFiles = models.BooleanField(default=False)
+    
+    personal_template = models.ForeignKey('ExamTemplate', null=True)
 
     SECTIONS = '0'
     TOGETHER = '1'
@@ -206,11 +208,39 @@ class Exam(models.Model):
         else: #self.layout == '1'
             return "Together"   
             
+class ExamTemplate(models.Model):
+    name = models.TextField(max_length=200,default='Exam name')
+    pub_date = models.DateTimeField('date published')
+    description = models.TextField(max_length=200,default='Description - web/comments only')
+    last_edited = models.DateTimeField('date last edited',default=datetime.now)
+    num_edits = models.PositiveIntegerField(default=0)
+    template_author = models.CharField(max_length=200,default='None yet')
+
+    header = models.TextField(max_length=2000,default='%Exam Header')
+    footer = models.TextField(max_length=2000,default='%Exam footer')
+            
+    def __unicode__(self):
+        return u'%s %s' % ("Exam Template",self.pk)            
+             
+            
 class QuestionForm(ModelForm):
     class Meta:
         model = Question
         fields = ['question_text','question_description','question_instructions','question_notes','answer_text', 'tags', 'difficulty', 'is_public']
 
+class TemplateForm(ModelForm):
+    
+    class Meta:
+        model = ExamTemplate
+        fields = ['name', 'description', 'header', 'footer']
+
+    def __init__(self, *args, **kwargs):
+        super(TemplateForm, self).__init__(*args, **kwargs)
+        self.fields['description'].required = False
+        self.fields['header'].required = False 
+        self.fields['footer'].required = False 
+        
+        
 class QuestionSearch(ModelForm):
     filterResults = forms.BooleanField(required=False, label="Include questions already in your exam", initial=False)
     

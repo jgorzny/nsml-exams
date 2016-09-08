@@ -1,0 +1,26 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+{% if template %}
+{% if template.template_author == user.username %}
+<h1>{{ template.name }} </h1>
+<p><b>Description: </b>{{ template.description }}</p><br>
+<b>Header: </b>
+<textarea rows="4" cols="50" readonly>
+{{ template.header }}</textarea><br>
+
+<b>Footer: </b>
+<textarea rows="4" cols="50" readonly>
+{{ template.footer }}</textarea><br>
+
+<p><b>Date Published: </b>{{ template.pub_date}}</p>
+<p><b>Date Edited: </b>{{ template.last_edited }}</p>
+
+<br>
+<a href="{% url 'exams.editTemplate' template.pk %}">Edit Template</a><br>
+<a href="{% url 'exams.delTemplate' template.pk %}">Delete Template</a><br>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

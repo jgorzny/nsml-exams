@@ -100,7 +100,15 @@ Reorder questions in the left list to change the order of the questions. <br>
 <input type="checkbox" name="shareExam" value="shareExam" {% if exam.is_public %} checked="checked" {% endif %}>Share Exam<br>
 
     <input type="hidden" id="question_order" name="question_order" value="{% for question in exam_question_list %}{{ question.id }},{% endfor %}" />
+        {% if personaltemplates %}
+        Personal template to use:<br>
+      <input type="radio" name="personal_template" value="none" {% if not exam.personal_template %}checked="checked"{% endif %}> None<br>
+      {% for template in personaltemplates %}
+            <input type="radio" name="personal_template" value="{{ template.pk }}" {% if exam.personal_template %}{% if exam.personal_template == template %}checked="checked"{% endif %}{% endif %}> {{ template.name }}<br>
+      {% endfor %}
+      {% endif %}
 
+    
         <input type="submit" value="Update Exam">
     </form>
     {% endif %}

@@ -30,7 +30,7 @@ import shutil
 import random
 
 
-from .models import Question, QuestionForm, QuestionSearch, Images, Tables, Exam
+from .models import Question, QuestionForm, QuestionSearch, Images, Tables, Exam, ExamTemplate
 
 #Constant (helper) functions
 
@@ -692,7 +692,9 @@ def generateCartOptions(request):
         print("There are questions in the list - search")
         examList = request.session["exam_cart"]
         cart_question_list = Question.objects.filter(id__in=examList)
+        userTemplates = ExamTemplate.objects.filter(template_author=request.user.username) 
         context.update({'cart_question_list': cart_question_list})
+        context.update({'personaltemplates': userTemplates})
     return render(request, 'questions/cartoptions.html', context)        
         
 @login_required	
@@ -1165,6 +1167,15 @@ def generateOptions(request):
         if 'omitMeta' in request.session:
             del request.session['omitMeta']             
     
+    if 'personal_template' in request.POST.keys():
+        if not(request.POST['personal_template'] == "none"):
+            user_templates = ExamTemplate.objects.filter(template_author=request.user.username) 
+            templateInstance = user_templates.get(pk = request.POST['personal_template'])
+            print "requested ti:",request.POST['personal_template']
+            print "TI iD:", templateInstance.pk
+            examInstance.personal_template = templateInstance    
+            request.session['personal_template'] = templateInstance.pk
+    
     examInstance.save()
     
     request.session['fresh_exam'] = True
@@ -1199,16 +1210,24 @@ def makeExam(request):
         includeSepFiles = request.session['qfiles']
     else:
         includeSepFiles = False
-        
-    if 'exam_footer' in request.session:
-        efooter = request.session['exam_footer']
+    
+    if 'personal_template' in request.session:
+        print "personal template was usd..."
+        user_templates = ExamTemplate.objects.filter(template_author=request.user.username) 
+        templateInstance = user_templates.get(pk = request.session['personal_template'])  
+        eheader = templateInstance.header
+        print "eh:", eheader
+        efooter = templateInstance.footer
     else:
         efooter = ""
+        eheader = ""
+        
+    if 'exam_footer' in request.session:
+        efooter = efooter + "\n" + request.session['exam_footer']
+   
 
     if 'exam_header' in request.session:
-        eheader = request.session['exam_header']
-    else:
-        eheader = ""        
+        eheader = eheader + "\n" + request.session['exam_header']      
     
     
     if 'exam_appendix' in request.session:
