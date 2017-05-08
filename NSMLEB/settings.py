@@ -49,7 +49,8 @@ INSTALLED_APPS = [
 	'accounts.apps.AccountsConfig',
     'tagging',
     'tagging_autocomplete',
-	'exams.apps.ExamsConfig',    
+	'exams.apps.ExamsConfig',
+    'previews.apps.PreviewsConfig',
 ]
 
 MIDDLEWARE_CLASSES = [

@@ -161,6 +161,11 @@ class Tables(models.Model):
     def __unicode__(self):
         return u'%s %s' % ("Table",self.pk)     
 
+        
+class Previewcode(models.Model):
+    previewCode = models.TextField(max_length=2000,default='%Render preview code - will be inserted into header (before begin{document}).')
+    preview_author = models.CharField(max_length=200,default='None yet')
+        
 class Exam(models.Model):
     exam_name = models.TextField(max_length=200,default='Exam name')
     pub_date = models.DateTimeField('date published')

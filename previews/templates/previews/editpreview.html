@@ -1,0 +1,21 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+
+<h1>Preview code used:</h1>
+        <form action="{% url 'previews.update' %}" method="POST">{% csrf_token %}
+
+<p><b>Code: </b>
+<textarea rows="4" cols="50" id="preview_text" name="preview_textarea" type="text">
+{{preview.previewCode}}
+</textarea> <br>
+
+</p><br>
+        <input type="submit" value="Update Preview Code">
+    </form>
+
+
+<br>
+Note: code is not checked until it is used; please check for errors. Make sure it is valid LaTeX code.
+
+{% endblock %}

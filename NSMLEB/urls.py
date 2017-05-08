@@ -23,4 +23,5 @@ urlpatterns = [
     url(r'^exams/', include('exams.urls')),    
 	url(r'^accounts/', include('accounts.urls', namespace='accounts')),
     url(r'^tagging_autocomplete/', include('tagging_autocomplete.urls')),    
+    url(r'^preview/', include('previews.urls')),   
 ]

@@ -1,0 +1,19 @@
+{% extends 'home/base.html' %}
+
+{% block content %}
+{% if preview %}
+
+<h1>Preview code used:</h1>
+<p><b>Code: </b>{{ preview.previewCode }}</p><br>
+
+<br>
+<a href="{% url 'previews.editpreview' %}">Edit Code</a><br>
+<a href="{% url 'previews.delpreview' %}">Clear Code</a><br>
+{% else %}
+
+<a href="{% url 'previews.editpreview' %}">New Code</a><br>
+
+
+{% endif %}
+
+{% endblock %}
