@@ -7,6 +7,9 @@ import os
 from django.contrib.auth.decorators import login_required
 from datetime import datetime    
 
+from pylatex import Document, Section, Subsection, Command
+from pylatex.utils import  NoEscape
+
 import ast
 
 from django.shortcuts import get_object_or_404, render
@@ -30,7 +33,7 @@ import shutil
 import random
 
 
-from .models import Question, QuestionForm, QuestionSearch, Images, Tables, Exam, ExamTemplate
+from .models import Question, QuestionForm, QuestionSearch, Images, Tables, Exam, ExamTemplate, Previewcode
 
 #Constant (helper) functions
 
@@ -422,7 +425,56 @@ def viewExamsContainingQuestion(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     examList = getExamsContainingQuestion(question_id)
     return render(request, 'questions/qexams.html', {'exams': examList, 'question': question})
+ 
+#Helper
+def getPreview(request):
+    ownedPreview = Previewcode.objects.filter(preview_author=request.user.username) 
+    return ownedPreview 
+
+#Helper #FML
+def makeQuestionPDF(question, prev, name):
+    if prev != None:
+        previewText = prev.previewCode
+    else:
+        previewText = ""
+        
+    questionText = question.question_text
     
+    #Build the pdf
+    doc = Document()
+    doc.preamble.append(NoEscape(previewText))
+    doc.append(NoEscape(questionText))
+    doc.append(NoEscape("EndOfQuestion"))
+    folder = 'D:\\Consulting\\NSMLExamBank\\NSMLEB\\questions\\static\\questions\\questionfiles\\pdftemp\\'
+    fileName = folder + name
+    
+    doc.generate_pdf(fileName, clean_tex=True) #appends .pdf to filename.
+    fileNameOut = fileName + ".pdf"
+    return fileNameOut
+ 
+@login_required	
+def renderQuestion(request, question_id): #TODO: this
+    question = get_object_or_404(Question, pk=question_id)
+    if request.user.username != question.initial_author and not request.user.is_superuser:
+        return noAccess(request)
+        
+    previews = getPreview(request)
+    if(len(previews) > 0):
+        prev = previews[0]
+    else:
+        prev = None
+
+    name = 'test'
+    fileName = makeQuestionPDF(question, prev, name)
+    sURL = static(fileName)
+    print(sURL)
+    print(fileName)
+    goodName = '/static/questions/questionfiles/pdftemp/' + name + '.pdf'
+    print("good", goodName)
+    return render(request, 'questions/renderquestion.html', {'question': question, 'file': goodName})        
+        
+    
+ 
 @login_required	
 def edit(request, question_id):
     question = get_object_or_404(Question, pk=question_id)

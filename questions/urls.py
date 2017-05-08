@@ -12,6 +12,7 @@ urlpatterns = [
     url(r'^search_results/$', views.searchresults, name='questions.searchresults'),
     url(r'^cart/$', views.cart, name='questions.cart'),	
     url(r'^(?P<question_id>[0-9]+)/edit/$', views.edit, name='edit'),
+    url(r'^(?P<question_id>[0-9]+)/render/$', views.renderQuestion, name='questions.render'),
     url(r'^(?P<question_id>[0-9]+)/copy/$', views.copyQuestion, name='questions.copy'),	
     url(r'^(?P<question_id>[0-9]+)/delete/$', views.deleteQuestion, name='questions.deleteQuestion'), 
     url(r'^(?P<question_id>[0-9]+)/removeFromExams/$', views.removeQuestionFromExams, name='questions.exams.removeAll'),

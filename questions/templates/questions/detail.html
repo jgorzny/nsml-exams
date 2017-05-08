@@ -5,6 +5,7 @@
 {% if question.is_public or question.initial_author == user.username or user.is_superuser %}
 
 <h1> {% autoescape off %}{{ question.getHTMLQuestionSource }}{% endautoescape  %} </h1>
+<a href="{% url 'questions.render' question.id %}">Preview Rendering</a>
 <ul>
 	<li> Difficulty: {{ question.get_difficulty_name}} </li>
 
